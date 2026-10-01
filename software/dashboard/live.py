@@ -47,6 +47,8 @@ class LiveFeed:
             cam = self.cfg["camera"]
             self._esp32 = ESP32Stream(cam["esp32_url"], mock=False)
             self._esp32.open()
+        elif self.source == "mock":
+            pass
         else:
             import cv2
 
@@ -60,6 +62,20 @@ class LiveFeed:
 
     # ---- threads ----
     def _grab(self) -> np.ndarray | None:
+        if self.source == "mock":
+            f = np.zeros((480, 640, 3), dtype=np.uint8)
+            f[:] = (25, 25, 30)
+            t = time.time()
+            cx = int(320 + 160 * np.sin(t * 1.2))
+            cy = int(240 + 70 * np.cos(t * 1.2))
+            try:
+                import cv2
+                cv2.rectangle(f, (cx - 35, cy - 60), (cx + 35, cy + 60), (0, 200, 255), -1)
+                cv2.putText(f, "SIMULATED TARGET (bottle)", (cx - 90, cy - 70), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 255), 1)
+                cv2.putText(f, f"TIME: {time.strftime('%H:%M:%S')}", (20, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            except Exception:
+                pass
+            return f
         if self._esp32 is not None:
             return self._esp32.read()
         if self._cap is not None:

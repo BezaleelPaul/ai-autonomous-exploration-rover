@@ -21,6 +21,7 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--cam", type=int, default=0)
     p.add_argument("--esp32", action="store_true")
+    p.add_argument("--mock", action="store_true", help="run with animated simulation frame")
     p.add_argument("--backend", default=None)
     p.add_argument("--conf", type=float, default=None)
     p.add_argument("--host", default="127.0.0.1")
@@ -33,7 +34,8 @@ def main() -> None:
     if args.conf is not None:
         cfg["ai"]["confidence_threshold"] = args.conf
 
-    feed = LiveFeed(cfg, source="esp32" if args.esp32 else "cam", cam_index=args.cam)
+    source = "mock" if args.mock else ("esp32" if args.esp32 else "cam")
+    feed = LiveFeed(cfg, source=source, cam_index=args.cam)
     feed.start()
     print(
         f"Live GUI on http://{args.host}:{args.port}  (CTRL+C stops, motors unaffected)"

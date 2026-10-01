@@ -1,0 +1,75 @@
+name: 'Rover firmware safety: startup STOP, protocol rejection, comm watchdog'
+version: 1
+author: 'AI Visual Rover Team'
+steps:
+  # --- 1. boot state: drivers released before any command (R?) ---
+  - delay: 300ms
+  - expect-pin:
+      part-id: driver
+      pin: IN1
+      value: 0
+  - expect-pin:
+      part-id: driver
+      pin: IN3
+      value: 0
+
+  # --- 2. valid echo at 100 cm -> telemetry says the link and sensor are healthy ---
+  - wait-serial: 'DIST:100'
+  - wait-serial: 'STATUS:OK'
+
+  # --- 3. non-protocol byte -> STATUS:ERROR, motors stay released (H3) ---
+  - write-serial: 'X'
+  - wait-serial: 'STATUS:ERROR'
+  - expect-pin:
+      part-id: driver
+      pin: IN1
+      value: 0
+  - expect-pin:
+      part-id: driver
+      pin: IN3
+      value: 0
+
+  # --- 4. 'F' at 100 cm (clear of the 15 cm emergency stop) must actuate both bridges ---
+  - write-serial: 'F'
+  - delay: 400ms
+  - wait-serial: 'STATUS:OK'
+  - expect-pin:
+      part-id: driver
+      pin: IN1
+      value: 1
+  - expect-pin:
+      part-id: driver
+      pin: IN3
+      value: 1
+
+  # --- 5. no command for >3 s -> firmware watchdog stops the motors (comm loss fail-safe) ---
+  - delay: 3600ms
+  - wait-serial: 'STATUS:STOP'
+  - expect-pin:
+      part-id: driver
+      pin: IN1
+      value: 0
+  - expect-pin:
+      part-id: driver
+      pin: IN3
+      value: 0
+
+  # --- 6. link recovers on the next command; explicit 'S' keeps the bridge released ---
+  - write-serial: 'F'
+  - delay: 400ms
+  - expect-pin:
+      part-id: driver
+      pin: IN1
+      value: 1
+  - write-serial: 'S'
+  - delay: 400ms
+  - expect-pin:
+      part-id: driver
+      pin: IN1
+      value: 0
+  - expect-pin:
+      part-id: driver
+      pin: IN3
+      value: 0
+  - wait-serial: 'STATUS:OK'
+

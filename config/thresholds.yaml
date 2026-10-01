@@ -1,0 +1,29 @@
+# Thresholds requiring PHYSICAL calibration. Initial values are safe starting points only.
+# Measure with a ruler and tune each value on the real rover.
+
+ultrasonic:
+  # HC-SR04 mounted front-center. Values in cm.
+  emergency_stop_cm: 15.0   # < this => immediate STOP (tune 12-20)
+  slow_cm: 30.0             # < this => cautious / slow
+  safe_cm: 50.0             # > this => normal
+  max_valid_cm: 400.0
+  min_valid_cm: 2.0
+  # Take 3 readings, use median. See scripts/calibration.py
+  samples_for_median: 3
+
+vision_zones:
+  # Fractions of frame width. Tune with scripts/calibration.py
+  left_max: 0.33
+  center_max: 0.66
+  center_tolerance: 0.06
+
+gap:
+  rover_width_cm: 18.0
+  safety_margin_cm: 8.0
+  # required_width = rover_width + 2 * safety_margin
+  min_confidence_to_enter: 0.65
+
+target_approach:
+  # Stop approaching when bbox occupies this fraction of frame width
+  stop_width_ratio: 0.45
+  lost_timeout_s: 3.0

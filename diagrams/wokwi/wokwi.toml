@@ -1,0 +1,16 @@
+# Wokwi project configuration for the Arduino UNO rover controller.
+# Reference: https://docs.wokwi.com/vscode/project-config
+#
+# The firmware is NOT built by Wokwi: compile the real firmware with
+# `python tools/build_wokwi_firmware.py` (arduino-cli, arduino:avr:uno), which
+# writes build/rover_controller.ino.{hex,elf} next to this file. Paths are
+# relative to this file (the Wokwi project root).
+#
+# sketch.ino in this directory is a verbatim copy of
+# arduino/rover_controller/rover_controller.ino, kept only so the pin map can
+# be diffed by tests/test_wokwi_sim.py. Compile the real firmware, not the copy.
+
+[wokwi]
+version = 1
+firmware = 'build/rover_controller.ino.hex'
+elf = 'build/rover_controller.ino.elf'

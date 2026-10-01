@@ -1,0 +1,25 @@
+name: 'Obstacle gate probe: can a scenario move the sonar closer than 15 cm?'
+version: 1
+author: 'AI Visual Rover Team'
+steps:
+  - delay: 300ms
+  - wait-serial: 'STATUS:OK'
+  # Probe: the HC-SR04 docs expose the distance slider interactively only.
+  # If set-control is supported by the part this makes the emergency-stop
+  # gate automatable; if not, this step fails and the gate stays a manual/
+  # interactive check (reported honestly).
+  - set-control:
+      part-id: sonar
+      control: distance
+      value: 10
+  - delay: 600ms
+  - wait-serial: 'DIST:10'
+  # With the target inside EMERGENCY_STOP_CM the firmware must refuse 'F'.
+  - write-serial: 'F'
+  - delay: 400ms
+  - wait-serial: 'STATUS:STOP'
+  - expect-pin:
+      part-id: driver
+      pin: IN1
+      value: 0
+

@@ -1,0 +1,149 @@
+# Central configuration — student-editable. All units noted.
+camera:
+  esp32_url: "http://192.168.1.100:81/stream"
+  width: 640
+  height: 480
+  fps_target: 15
+  reconnect_timeout_s: 5.0
+  frozen_frame_timeout_s: 3.0
+  jpeg_timeout_s: 2.0
+  # Inference-frame enhancement (display stays raw): fixes dull/yellow/dark
+  # frames before they reach the model. Cheap (~10ms). Denoise is slow: off.
+  enhance_clahe: true
+  enhance_sharpen: true
+  enhance_denoise: false
+
+ai:
+  model_name: "facebook/detr-resnet-50"
+  model_dir: "models/detr-resnet-50"
+  yolo_model: "yolo11n.pt"  # Lightweight baseline: 2.6M params, <150 ms @320 CPU
+  tracker: "default"        # default real-time tracker; supports "botsort.yaml" when GPU is enabled
+  #   Measured low-power fallback (reports/MODEL_BENCHMARK.md, 2026-09-26):
+  #   yolo26n.pt — 2.57 M params, p50 126 ms, 0.25 s refresh even at 100 %
+  #   CPU load, but recall 0.3541 vs 0.4769 (-12.3 pts) and F1 0.4962 vs
+  #   0.6011. Swap only if the H4 realtime gate cannot otherwise be met.
+  # Words the world-model looks for (COCO has no "pen" — this list fixes that).
+  # Full vocabulary: all 80 COCO classes + common extras (pen/watch/keys/...).
+  # Singular nouns only — CLIP matches those best.
+  custom_classes: ["person", "bicycle", "car", "motorcycle", "airplane", "bus",
+                   "train", "truck", "boat", "traffic light", "fire hydrant",
+                   "stop sign", "parking meter", "bench", "bird", "cat", "dog",
+                   "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe",
+                   "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
+                   "skis", "snowboard", "sports ball", "kite", "baseball bat",
+                   "baseball glove", "skateboard", "surfboard", "tennis racket",
+                   "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl",
+                   "banana", "apple", "sandwich", "orange", "broccoli", "carrot",
+                   "hot dog", "pizza", "donut", "cake", "chair", "couch",
+                   "potted plant", "bed", "dining table", "toilet", "tv", "laptop",
+                   "mouse", "remote", "keyboard", "cell phone", "microwave", "oven",
+                   "toaster", "sink", "refrigerator", "book", "clock", "vase",
+                   "scissors", "teddy bear", "hair drier", "toothbrush",
+                   "pen", "pencil", "marker", "watch", "keys", "wallet", "glasses",
+                   "earbuds", "charger", "stapler", "ruler", "eraser"]
+  yolo_imgsz: 320            # realtime budget, not accuracy: at ~100% host CPU
+                             # load 320 measures p50 334-685 ms (0.67-1.37 s
+                             # refresh), 384 -> 0.87 s, 416 -> 1.02 s and
+                             # 480 -> 1.15 s, i.e. 416+ BREAK the 1.0 s
+                             # target-lock (red-team H4) on a loaded machine
+                             # and 320 itself is green only at <=~60 % load
+                             # (p50 184 ms @50 % -> 0.37 s refresh). Accuracy
+                             # comes from the thresholds below instead (see
+                             # scripts/eval_detection.py).
+  yolo_track: true           # ByteTrack IDs keep labels glued to objects
+  min_box_px: 8              # drop tiny-box false positives (yolo backend);
+                             # 20 px silently discarded small objects (eval)
+  confidence_threshold: 0.25 # detector operating point on COCO128: 0.5 ->
+                             # recall 0.352, 0.25 -> 0.477, F1 0.601 vs 0.509.
+                             # Lower reports MORE objects (better multi-object
+                             # recall) but with lower precision.
+  target_confidence: 0.5     # separate gate for acting on a detection: which
+                             # objects ObjectTracker steers toward AND the
+                             # minimum confidence for forward motion
+                             # (SafetyManager LOW_CONFIDENCE). Kept at the old
+                             # 0.5 so the extra low-confidence detections are
+                             # visible without letting the rover approach them.
+  iou_threshold: 0.5
+  # Empty = detect all 80 COCO classes (best for testing held objects).
+  # Rover target filtering still happens in ObjectTracker by --target name.
+  allowed_classes: []
+  target_class: "bottle"    # default --target (override via TARGET_CLASS env / --target)
+  device: "cpu"          # cpu | cuda
+  # Measured (CPU, logs/benchmark.json): yolo11s p50 119-211 ms @320,
+  # load 0.4 s, weights in repo root.
+  # Measured on COCO128 (logs/detection_baseline.json vs logs/detection_final.json):
+  # conf 0.25 + min_box 8 => recall 0.352->0.477, multi-object recall
+  # 0.347->0.471, F1 0.509->0.601, mAP50 0.618->0.640.
+  # Latency is load-dependent (H4 = 2 x p50 must close under 1.0 s):
+  #   p50 184 ms @50% CPU load  -> 0.37 s refresh -> H4 green
+  #   p50 534-685 ms @100% load -> 1.07-1.37 s refresh -> H4 RED
+  # Run the realtime gate with the host at <=~60% load (see docs/testing.md).
+  # See scripts/eval_detection.py; act-on gate is ai.target_confidence.
+  # backend hf (DETR-ResNet-50) measured ~5.1 s/infer — accuracy option, NOT realtime.
+  inference_interval: 2  # run inference every N frames (perf tuning, see scripts/benchmark.py)
+  backend: "yolo"        # yolo (realtime default) | hf | color | mock
+
+rover:
+  width_cm: 18.0
+  length_cm: 22.0
+  safety_margin_cm: 8.0
+  min_obstacle_distance_cm: 30.0
+  slow_down_distance_cm: 30.0
+  emergency_stop_distance_cm: 15.0
+  movement_timeout_s: 1.0
+  turning_duration_s: 0.5
+  search_rotation_duration_s: 10.0  # 30s search_timeout / 10s => 3 rotations >= max_search_rotations=2
+  approach_stop_width_ratio: 0.45  # if bbox width > 45% frame => VERY CLOSE => stop
+  max_speed_pwm: 200
+
+# Phase 9+ closed-loop drive foundation (docs/future-work/30_FUTURE_WORK.md).
+# Gains feed software/control/pid.py; geometry feeds software/control/odometry.py.
+# velocity_* are firmware constants (rover_controller.ino), synced by contract
+# test; steering_* drive laptop-side proportional turn PWM (Protocol v2).
+# encoders_enabled stays false until real encoders are fitted (HARDWARE REQUIRED).
+control:
+  encoders_enabled: false
+  encoder_ppr: 20
+  wheel_diameter_cm: 6.5
+  pid_kp: 1.2
+  pid_ki: 0.0
+  pid_kd: 0.05
+  velocity_kp: 1.2
+  velocity_target_tps: 50
+  velocity_pwm_ff: 150
+  velocity_period_ms: 50
+  steering_kp: 600.0
+  steering_min_pwm: 120
+
+serial:
+  port: "COM3"
+  baud_rate: 9600
+  command_timeout_s: 1.0
+  heartbeat_interval_s: 2.0
+  reconnect_attempts: 5
+
+navigation:
+  left_boundary: 0.33
+  center_boundary: 0.66
+  center_tolerance: 0.06
+  target_lock_duration_s: 2.0
+  search_timeout_s: 30.0
+  max_search_rotations: 2
+  min_command_duration_s: 0.4
+  decision_cooldown_s: 0.2
+
+safety:
+  comm_timeout_s: 3.0
+  sensor_invalid_limit: 5
+  require_camera_for_auto: true
+  require_serial_for_auto: true
+
+dashboard:
+  enabled: false
+  host: "127.0.0.1"
+  port: 5000
+
+logging:
+  level: "INFO"
+  dir: "logs"
+  log_frames: false

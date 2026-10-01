@@ -1,0 +1,16 @@
+# BoT-SORT optimized for real-time edge/laptop robotics
+# Disables CPU-heavy optical flow GMC on synthetic/noise frames while preserving
+# Kalman motion prediction, multi-object ID association, and appearance stability.
+
+tracker_type: botsort
+track_high_thresh: 0.25
+track_low_thresh: 0.1
+new_track_thresh: 0.25
+track_buffer: 30
+match_thresh: 0.8
+fuse_score: True
+gmc_method: none
+proximity_thresh: 0.5
+appearance_thresh: 0.8
+with_reid: False
+model: auto

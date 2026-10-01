@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+logs/
+*.log
+runs/
+models/
+*.pt
+*.onnx
+*.bin
+*_openvino_model/
+kernel.errors.txt
+*.bak
+diagrams/wokwi/build/
+.DS_Store

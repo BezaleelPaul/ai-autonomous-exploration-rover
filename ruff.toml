@@ -1,0 +1,6 @@
+# Project lint config (ruff). Run: python -m ruff check software tests
+#
+# Deliberately NOT selected: BLE001/S110 (fail-safe catch-alls are required —
+# hardware/camera/serial paths must never crash the control loop), LOG015/DTZ005.
+[lint]
+select = ["E4", "E7", "E9", "F", "I", "SIM", "C4", "RUF", "PLW"]

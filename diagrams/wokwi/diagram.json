@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "author": "AI Visual Rover Team",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-arduino-uno",
+      "id": "uno",
+      "top": 120,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-hc-sr04",
+      "id": "sonar",
+      "top": -80,
+      "left": 340,
+      "attrs": { "distance": "100" }
+    },
+    {
+      "type": "chip-l298n",
+      "id": "driver",
+      "top": 430,
+      "left": 300,
+      "attrs": { "Vs": "7" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "leftFwd",
+      "top": 640,
+      "left": 150,
+      "attrs": { "color": "green", "label": "L FWD" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "leftRev",
+      "top": 640,
+      "left": 250,
+      "attrs": { "color": "red", "label": "L REV" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "rightFwd",
+      "top": 640,
+      "left": 400,
+      "attrs": { "color": "green", "label": "R FWD" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "rightRev",
+      "top": 640,
+      "left": 500,
+      "attrs": { "color": "red", "label": "R REV" }
+    }
+  ],
+  "connections": [
+    ["sonar:VCC", "uno:5V", "red", []],
+    ["sonar:GND", "uno:GND.1", "black", []],
+    ["uno:11", "sonar:TRIG", "green", []],
+    ["uno:12", "sonar:ECHO", "orange", []],
+
+    ["uno:5", "driver:EN A", "green", []],
+    ["uno:6", "driver:IN1", "green", []],
+    ["uno:7", "driver:IN2", "green", []],
+    ["uno:8", "driver:IN3", "green", []],
+    ["uno:9", "driver:IN4", "green", []],
+    ["uno:10", "driver:EN B", "green", []],
+    ["driver:GND", "uno:GND.2", "black", []],
+
+    ["driver:OUT1", "leftFwd:A", "green", []],
+    ["driver:OUT2", "leftRev:A", "red", []],
+    ["driver:OUT3", "rightFwd:A", "green", []],
+    ["driver:OUT4", "rightRev:A", "red", []],
+    ["leftFwd:C", "uno:GND.2", "black", []],
+    ["leftRev:C", "uno:GND.2", "black", []],
+    ["rightFwd:C", "uno:GND.3", "black", []],
+    ["rightRev:C", "uno:GND.3", "black", []]
+  ],
+  "dependencies": {
+    "chip-l298n": "github:drf5n/Wokwi-Chip-L298N@1.0.5"
+  }
+}

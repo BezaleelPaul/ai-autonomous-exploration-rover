@@ -1,0 +1,34 @@
+test_id,date,scenario,lighting,target_distance,target_position,confidence,command,obstacle_distance,response_time_ms,result,notes
+TC-MOT-01,,Motor Direction Integrity (Forward/Reverse),[LIGHTING],,,,,,,[TO PERFORM],Motors and L298N H-Bridge wiring
+TC-MOT-02,,Differential Steering Rotation (Left/Right),[LIGHTING],,,,,,,[TO PERFORM],Steering logic in rover_controller.ino
+TC-MOT-03,,PWM Symmetrical Speed Response,[LIGHTING],,,,,,,[TO PERFORM],Open-loop motor mismatch characterization
+TC-MOT-04,,Motor Cutoff Command Latency ('S'),[LIGHTING],,,,,,,[TO PERFORM],Actuator responsiveness
+TC-US-01,,HC-SR04 Ranging Linearity (Flat Wall),[LIGHTING],,,,,,,[TO PERFORM],Ultrasonic acoustic accuracy
+TC-US-02,,Ultrasonic Emergency Stop Override (<15cm),[LIGHTING],,,,,,,[TO PERFORM],Autonomous safety hardware override
+TC-US-03,,Acoustic Glancing Angle & Specular Reflection,[LIGHTING],,,,,,,[TO PERFORM],HC-SR04 beam boundary limitations
+TC-US-04,,Echo Timeout & Missing Target Recovery,[LIGHTING],,,,,,,[TO PERFORM],Non-blocking safety loop verification
+TC-COM-01,,Communication Timeout Watchdog,[LIGHTING],,,,,,,[TO PERFORM],Failsafe loss of signal (LOS) interlock
+TC-COM-02,,Invalid Command Packet Rejection,[LIGHTING],,,,,,,[TO PERFORM],Serial buffer validation
+TC-COM-03,,Baud Rate & Frame Synchronization,[LIGHTING],,,,,,,[TO PERFORM],UART throughput and signal integrity
+TC-COM-04,,Telemetry Streaming Rate Verification,[LIGHTING],,,,,,,[TO PERFORM],Microcontroller loop timing stability
+TC-CAM-01,,OV2640 Frame Acquisition & Resolution,[LIGHTING],,,,,,,[TO PERFORM],Camera sensor driver verification
+TC-CAM-02,,Camera Frame Rate (FPS) Stability,[LIGHTING],,,,,,,[TO PERFORM],Video capture pipeline throughput
+TC-CAM-03,,Camera Frozen Frame Watchdog,[LIGHTING],,,,,,,[TO PERFORM],Visual sensor failure interlock
+TC-CAM-04,,CLAHE & Preprocessing Image Normalization,[LIGHTING],,,,,,,[TO PERFORM],Preprocessing pipeline efficiency
+TC-AI-01,,Target Object Detection Confidence (Center),[LIGHTING],,,,,,,[TO PERFORM],Perception accuracy under nominal conditions
+TC-AI-02,,False Positive Immunity (Empty Scene),[LIGHTING],,,,,,,[TO PERFORM],Classifier specificity
+TC-AI-03,,Low Confidence Filtering & Suppression,[LIGHTING],,,,,,,[TO PERFORM],Confidence threshold validation
+TC-AI-04,,Multiple Object Disambiguation,[LIGHTING],,,,,,,[TO PERFORM],Object tracking arbitration
+TC-AI-05,,Target Disappearance & Search Fallback,[LIGHTING],,,,,,,[TO PERFORM],Target occlusion / loss handling
+TC-ENV-01,,Low Illumination Robustness (<50 lux),[LIGHTING],,,,,,,[TO PERFORM],Low-light perception limits
+TC-ENV-02,,High Illumination & Direct Glare (>1500 lux),[LIGHTING],,,,,,,[TO PERFORM],Sensor glare tolerance
+TC-ENV-03,,Motion Blur During Rapid Pivot Turns,[LIGHTING],,,,,,,[TO PERFORM],Rotational blur mitigation
+TC-NAV-01,,Vision Zone Steering Mapping (Left Sector),[LIGHTING],,,,,,,[TO PERFORM],Steering logic verification
+TC-NAV-02,,Vision Zone Steering Mapping (Center Sector),[LIGHTING],,,,,,,[TO PERFORM],Straight tracking verification
+TC-NAV-03,,Vision Zone Steering Mapping (Right Sector),[LIGHTING],,,,,,,[TO PERFORM],Steering logic verification
+TC-NAV-04,,Anti-Oscillation Deadband Stability,[LIGHTING],,,,,,,[TO PERFORM],Control oscillation prevention
+TC-NAV-05,,Target Proximity Termination (Stop Ratio),[LIGHTING],,,,,,,[TO PERFORM],Goal completion boundary
+TC-NAV-06,,Search Mode Timeout & Rotation Limit,[LIGHTING],,,,,,,[TO PERFORM],Search space bounding
+TC-PWR-01,,Battery Voltage Sag Under Motor Stall,[LIGHTING],,,,,,,[TO PERFORM],Power decoupling and brownout resilience
+TC-PWR-02,,Arduino Hardware Reset Fault Injection,[LIGHTING],,,,,,,[TO PERFORM],Hardware reset fault tolerance
+TC-PWR-03,,Long-Duration Autonomous Endurance (30 Minutes),[LIGHTING],,,,,,,[TO PERFORM],Thermal and system stability

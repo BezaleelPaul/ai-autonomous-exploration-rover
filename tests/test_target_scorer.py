@@ -36,3 +36,35 @@ def test_select_best_picks_optimal_target():
     assert best is not None
     assert best.detection.class_name == "person"
     assert best.detection.track_id == 7
+
+
+def test_foreground_first_then_distant_high_precision():
+    scorer = TargetScorer(close_area_ratio=0.03, min_distant_confidence=0.70, min_distant_track_age=4)
+
+    # Candidate 1: Immediate foreground (in front of camera, large area)
+    # Area: 160 x 200 = 32000 / 307200 = 0.104 > 0.03 (Foreground)
+    det_fg = Detection("bottle", 0.75, 200, 200, 360, 400, track_id=1)
+
+    # Candidate 2: Far away in background (small, area: 25 x 30 = 750 / 307200 = 0.0024)
+    # Even if it has higher confidence (0.95) and mature age (10)
+    det_bg = Detection("bottle", 0.95, 450, 100, 475, 130, track_id=2)
+
+    candidates = [(det_fg, 3), (det_bg, 10)]
+    best = scorer.select_best(candidates, "bottle", frame_width=640, frame_height=480)
+
+    # RULE 1: Foreground object immediately in front of camera is selected FIRST!
+    assert best is not None
+    assert best.detection.track_id == 1
+    assert best.is_foreground is True
+
+    # RULE 2: When foreground is gone, distant target is considered ONLY WITH HIGH PRECISION
+    # Far candidate with low confidence or young track is rejected
+    det_bg_low_conf = Detection("bottle", 0.50, 450, 100, 475, 130, track_id=3)
+    best_distant_reject = scorer.select_best([(det_bg_low_conf, 1)], "bottle", frame_width=640, frame_height=480)
+    assert best_distant_reject is None  # Dropped because distant requires high precision
+
+    # Far candidate with high confidence & mature track is accepted
+    best_distant_accept = scorer.select_best([(det_bg, 10)], "bottle", frame_width=640, frame_height=480)
+    assert best_distant_accept is not None
+    assert best_distant_accept.detection.track_id == 2
+

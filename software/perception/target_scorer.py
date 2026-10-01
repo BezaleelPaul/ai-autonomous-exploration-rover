@@ -25,6 +25,7 @@ class ScoredCandidate:
     objective_score: float
     track_age: int = 1
     uncertainty: float = 0.0
+    is_foreground: bool = True
 
 
 class TargetScorer:
@@ -38,6 +39,10 @@ class TargetScorer:
         weight_proximity: float = 0.15,
         weight_centering: float = 0.10,
         target_stability_age: int = 15,
+        close_area_ratio: float = 0.03,
+        min_distant_confidence: float = 0.60,
+        min_distant_track_age: int = 3,
+        prioritize_foreground: bool = True,
     ):
         self.w_obj = weight_objective
         self.w_conf = weight_confidence
@@ -45,6 +50,10 @@ class TargetScorer:
         self.w_dist = weight_proximity
         self.w_pos = weight_centering
         self.target_stability_age = max(1, target_stability_age)
+        self.close_area_ratio = close_area_ratio
+        self.min_distant_confidence = min_distant_confidence
+        self.min_distant_track_age = min_distant_track_age
+        self.prioritize_foreground = prioritize_foreground
 
     def score_candidate(
         self,
@@ -71,13 +80,17 @@ class TargetScorer:
         # 4. Proximity / scale: bounding box area fraction of frame (capped at 40% frame area)
         frame_area = max(1.0, frame_width * frame_height)
         box_area = det.width * det.height
-        prox_score = min(1.0, (box_area / frame_area) / 0.40)
+        area_ratio = box_area / frame_area
+        prox_score = min(1.0, area_ratio / 0.40)
 
         # 5. Centering: normalized horizontal error e_x in [-1, 1], centering = 1 - |e_x|
         # center_x_norm is in [0, 1], normalized error e_x = 2 * (cx - 0.5)
         cx_norm = det.center_x_norm(frame_width)
         e_x = 2.0 * (cx_norm - 0.5)
         pos_score = max(0.0, 1.0 - abs(e_x))
+
+        # Check if immediately present in front of camera (Foreground vs Distant)
+        is_fg = bool((area_ratio >= self.close_area_ratio) or (det.y2 >= 0.65 * frame_height))
 
         total = (
             self.w_obj * obj_score
@@ -97,6 +110,7 @@ class TargetScorer:
             objective_score=round(obj_score, 3),
             track_age=track_age,
             uncertainty=round(uncertainty, 3),
+            is_foreground=is_fg,
         )
 
     def select_best(
@@ -134,7 +148,28 @@ class TargetScorer:
         if not scored:
             return None
 
-        # Sort descending by total score
+        # Depth-stratified Priority:
+        # 1. First, prioritize what is present in front of the camera (Foreground)
+        if self.prioritize_foreground:
+            fg = [s for s in scored if s.is_foreground]
+            if fg:
+                fg.sort(key=lambda s: s.total_score, reverse=True)
+                return fg[0]
+
+            # 2. Later, what is far away from the camera with HIGH PRECISION
+            distant = [
+                s for s in scored
+                if not s.is_foreground
+                and s.confidence_score >= self.min_distant_confidence
+                and s.track_age >= self.min_distant_track_age
+                and s.uncertainty <= 0.65
+            ]
+            if distant:
+                distant.sort(key=lambda s: s.total_score, reverse=True)
+                return distant[0]
+            return None
+
+        # Fallback / standard
         scored.sort(key=lambda s: s.total_score, reverse=True)
         return scored[0]
 

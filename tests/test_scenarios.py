@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from software.navigation.decision_engine import DecisionEngine
+from software.control.steering import command_for_position
 from software.navigation.gap_assessment import GapAssessor
 from software.navigation.obstacle_avoidance import ObstacleAvoidance
 from software.safety.safety_manager import SafetyManager
@@ -21,8 +21,7 @@ def pipeline(
     confidence=0.9,
 ):
     """Full chain: Decision -> Avoidance -> Safety. Returns final command."""
-    eng = DecisionEngine(min_command_duration_s=0.0, cooldown_s=0.0)
-    desired = eng.decide(ai_position, very_close, target_present, now=0.0).command
+    desired = command_for_position(ai_position, very_close, target_present)[0]
     desired = ObstacleAvoidance(15.0, 30.0).override(desired, distance_cm)
     v = SafetyManager(15.0, 30.0).check(
         desired, distance_cm, serial_ok, camera_ok, confidence, 0.5

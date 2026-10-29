@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import copy
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+logger = logging.getLogger(__name__)
 
 # Environment overrides (.env.example): file values are the defaults,
 # environment variables win when present.
@@ -18,6 +22,9 @@ _ENV_OVERRIDES = {
     "TARGET_CLASS": ("ai", "target_class", str),
     "LOG_LEVEL": ("logging", "level", str),
 }
+
+# "read the path out of autotune.learned_path" (None means "no overlay").
+_FROM_CONFIG = object()
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:
@@ -38,9 +45,54 @@ def _apply_env_overrides(cfg: dict[str, Any]) -> None:
         cfg.setdefault(section, {})[key] = value
 
 
+def _resolve_learned_path(
+    cfg: dict[str, Any], learned_path: str | Path | object
+) -> Path | None:
+    """Where the learned overlay lives (``autotune.learned_path``)."""
+    if learned_path is _FROM_CONFIG:
+        raw = (cfg.get("autotune", {}) or {}).get("learned_path", "")
+        learned_path = raw if raw is not None else ""
+    if not learned_path:
+        return None
+    return Path(str(learned_path))
+
+
+def _merge_learned_overlay(
+    cfg: dict[str, Any], path: Path | None
+) -> dict[str, Any] | None:
+    """Merge remembered values on top of the shipped config.
+
+    Precedence becomes **file < learned < environment**. The overlay only
+    carries perception dials (``software.autotune.store.LEARNED_SECTIONS``) and
+    it is dropped wholesale when the result fails ``validate_config``: a stale
+    or hand-mangled overlay must degrade to the shipped values, never brick a
+    session.
+    """
+    if path is None or not path.is_file():
+        return None
+    from software.autotune.store import learned_overlay
+
+    overlay = learned_overlay(path)
+    if not overlay:
+        return None
+    trial = copy.deepcopy(cfg)
+    for section, values in overlay.items():
+        node = trial.setdefault(section, {})
+        if not isinstance(node, dict):
+            continue
+        node.update(values)
+    try:
+        validate_config(trial)
+    except ValueError as exc:
+        logger.warning("ignoring learned overlay %s: %s", path, exc)
+        return None
+    return trial
+
+
 def load_config(
     config_path: str | Path = "config/config.yaml",
     thresholds_path: str | Path | None = "config/thresholds.yaml",
+    learned_path: str | Path | object = _FROM_CONFIG,
 ) -> dict[str, Any]:
     cfg = load_yaml(config_path)
     # cfg["thresholds"] is always present after load_config (empty dict when
@@ -49,6 +101,9 @@ def load_config(
         cfg["thresholds"] = load_yaml(thresholds_path)
     else:
         cfg.setdefault("thresholds", {})
+    merged = _merge_learned_overlay(cfg, _resolve_learned_path(cfg, learned_path))
+    if merged is not None:
+        cfg = merged
     _apply_env_overrides(cfg)
     validate_config(cfg)
     return cfg
@@ -119,3 +174,27 @@ def validate_config(cfg: dict[str, Any]) -> None:
         v = ctl.get(key)
         if v is not None and not (0 <= v <= 255):
             raise ValueError(f"control.{key} must be in 0..255")
+    # Auto-tune: the tuner may only move dials inside these ranges, so the
+    # bounds live here (the same clamp every config source goes through).
+    interval = cfg["ai"].get("inference_interval")
+    if interval is not None and int(interval) < 1:
+        raise ValueError("ai.inference_interval must be >= 1")
+    auto = cfg.get("autotune", {})
+    if not isinstance(auto, dict):
+        raise ValueError("autotune must be a mapping")
+    _positive("autotune.window_s", auto.get("window_s"))
+    budget = auto.get("budget_margin")
+    if budget is not None and not (0.0 < float(budget) <= 1.0):
+        raise ValueError("autotune.budget_margin must be in (0,1]")
+    max_interval = auto.get("max_interval")
+    if max_interval is not None and int(max_interval) < 1:
+        raise ValueError("autotune.max_interval must be >= 1")
+    rearm = auto.get("rearm_ratio")
+    if rearm is not None and float(rearm) <= 1.0:
+        raise ValueError("autotune.rearm_ratio must be > 1.0")
+    improve = auto.get("improve_ratio")
+    if improve is not None and not (0.0 < float(improve) < 1.0):
+        raise ValueError("autotune.improve_ratio must be in (0,1]")
+    learned = auto.get("learned_path")
+    if learned is not None and not isinstance(learned, str):
+        raise ValueError("autotune.learned_path must be a string")

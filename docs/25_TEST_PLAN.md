@@ -410,8 +410,8 @@ The system test plan spans four foundational verification domains:
 | **Test ID** | `TC-NAV-01` |
 | **Objective** | Vision Zone Steering Mapping (Left Sector) |
 | **Setup & Preconditions** | Target placed in left sector (x_center = 0.20) |
-| **Procedure** | Evaluate DecisionEngine output. |
-| **Expected Outcome** | DecisionEngine outputs state ALIGNING, command 'L' (turn left). |
+| **Procedure** | Evaluate steering layer output. |
+| **Expected Outcome** | steering layer outputs state ALIGNING, command 'L' (turn left). |
 | **Actual Measured Result** | `[TO PERFORM EXPERIMENTALLY — FIELD MEASUREMENT REQUIRED]` |
 | **Status (Pass / Fail)** | `[PENDING PHYSICAL VERIFICATION]` |
 | **Subsystem Tested** | Steering logic verification |
@@ -426,8 +426,8 @@ The system test plan spans four foundational verification domains:
 | **Test ID** | `TC-NAV-02` |
 | **Objective** | Vision Zone Steering Mapping (Center Sector) |
 | **Setup & Preconditions** | Target placed in center sector (x_center = 0.50) |
-| **Procedure** | Evaluate DecisionEngine output. |
-| **Expected Outcome** | DecisionEngine outputs state APPROACHING, command 'F' (drive straight). |
+| **Procedure** | Evaluate steering layer output. |
+| **Expected Outcome** | steering layer outputs state APPROACHING, command 'F' (drive straight). |
 | **Actual Measured Result** | `[TO PERFORM EXPERIMENTALLY — FIELD MEASUREMENT REQUIRED]` |
 | **Status (Pass / Fail)** | `[PENDING PHYSICAL VERIFICATION]` |
 | **Subsystem Tested** | Straight tracking verification |
@@ -442,8 +442,8 @@ The system test plan spans four foundational verification domains:
 | **Test ID** | `TC-NAV-03` |
 | **Objective** | Vision Zone Steering Mapping (Right Sector) |
 | **Setup & Preconditions** | Target placed in right sector (x_center = 0.80) |
-| **Procedure** | Evaluate DecisionEngine output. |
-| **Expected Outcome** | DecisionEngine outputs state ALIGNING, command 'R' (turn right). |
+| **Procedure** | Evaluate steering layer output. |
+| **Expected Outcome** | steering layer outputs state ALIGNING, command 'R' (turn right). |
 | **Actual Measured Result** | `[TO PERFORM EXPERIMENTALLY — FIELD MEASUREMENT REQUIRED]` |
 | **Status (Pass / Fail)** | `[PENDING PHYSICAL VERIFICATION]` |
 | **Subsystem Tested** | Steering logic verification |
@@ -475,7 +475,7 @@ The system test plan spans four foundational verification domains:
 | **Objective** | Target Proximity Termination (Stop Ratio) |
 | **Setup & Preconditions** | Rover approaches target until bbox width ratio > 0.45 |
 | **Procedure** | Record commanded movement. |
-| **Expected Outcome** | DecisionEngine detects width_ratio > 0.45; transitions to STOPPED; issues 'S'. |
+| **Expected Outcome** | steering layer detects width_ratio > 0.45; transitions to STOPPED; issues 'S'. |
 | **Actual Measured Result** | `[TO PERFORM EXPERIMENTALLY — FIELD MEASUREMENT REQUIRED]` |
 | **Status (Pass / Fail)** | `[PENDING PHYSICAL VERIFICATION]` |
 | **Subsystem Tested** | Goal completion boundary |

@@ -71,7 +71,7 @@ The documentation must strictly distinguish between the **Laptop-hosted prototyp
 
 ## 4. Software Feasibility
 
-- **State Machine (`decision_engine.py`):** Clean separation of states (`IDLE`, `MANUAL`, `OBSERVE`, `SEARCHING`, `ALIGNING`, `APPROACHING`, `AVOIDING`, `STOPPED`, `EMERGENCY_STOP`, `ERROR`). Easily implemented in C++ on ESP32.
+- **State Machine (`software/control/steering.py`):** Clean separation of states (`IDLE`, `MANUAL`, `OBSERVE`, `SEARCHING`, `ALIGNING`, `APPROACHING`, `AVOIDING`, `STOPPED`, `EMERGENCY_STOP`, `ERROR`). Easily implemented in C++ on ESP32.
 - **Safety Manager (`safety_manager.py`):** Well-structured multi-priority latching.
 - **Arduino Firmware (`rover_controller.ino`):** Fully operational, non-blocking timing with `millis()`, local 3-second watchdog, and 200ms telemetry output.
 - **Test Suite:** 35 passing pytest unit tests covering edge cases, state transitions, and mock perception.

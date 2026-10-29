@@ -232,10 +232,8 @@ def test_docs_communication_protocol_names_the_correct_host():
 def test_docs_state_machine_states_are_reachable_in_code():
     doc = (ROOT / "docs" / "19_STATE_MACHINE.md").read_text(encoding="utf-8")
     claimed = set(re.findall(r"\*\*([A-Z_]+)\*\*", doc))
-    eng = (SOFTWARE / "navigation" / "decision_engine.py").read_text(encoding="utf-8")
-    # drop the STATES tuple: merely *listing* a state is not reaching it
-    eng_without_table = re.sub(r"STATES\s*=\s*\(.*?\)\s*\n", "", eng, flags=re.DOTALL)
-    blob = eng_without_table + (SOFTWARE / "main.py").read_text(encoding="utf-8")
+    steering = (SOFTWARE / "control" / "steering.py").read_text(encoding="utf-8")
+    blob = steering + (SOFTWARE / "main.py").read_text(encoding="utf-8")
     unreachable = [
         s for s in sorted(claimed) if f'"{s}"' not in blob and f"'{s}'" not in blob
     ]
@@ -244,13 +242,13 @@ def test_docs_state_machine_states_are_reachable_in_code():
     )
 
 
-def test_decision_engine_emergency_path_is_wired_up():
+def test_steering_control_layer_is_wired_up():
     blob = "\n".join(py_sources().values())
-    assert re.search(r"\.emergency\s*\(", blob), (
-        "DecisionEngine.emergency() is never called (dead safety API)"
+    assert re.search(r"AntiOscillation\s*\(", blob), (
+        "AntiOscillation is never constructed (dead control API)"
     )
-    assert re.search(r"\.to_search\s*\(", blob), (
-        "DecisionEngine.to_search() is never called (dead API)"
+    assert re.search(r"command_for_position\s*\(", blob), (
+        "command_for_position is never called (dead mapping API)"
     )
 
 

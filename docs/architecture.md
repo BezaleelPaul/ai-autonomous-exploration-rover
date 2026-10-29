@@ -7,7 +7,7 @@ ESP32-CAM --WiFi MJPEG--> ESP32Stream -> FrameManager -+
                                                        v
                                               ObjectTracker -> SceneAnalyzer
                                                        v
-                                              DecisionEngine (FSM)
+                                              steering.py (mapping + AntiOscillation)
                                                        v
                                               ObstacleAvoidance
                                                        v

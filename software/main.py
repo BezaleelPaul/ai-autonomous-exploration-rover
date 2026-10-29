@@ -1,4 +1,10 @@
-"""Main orchestrator: STARTUP -> LOOP (PERCEIVE/DECIDE/SAFETY/CONTROL) -> SHUTDOWN.
+"""Legacy headless orchestrator: STARTUP -> LOOP -> SHUTDOWN.
+
+.. deprecated::
+   The autonomous modes here (observe/search/scan360) are a **secondary,
+   legacy** entry point. The canonical autonomous rover is the Mission Deck
+   (``scripts/dashboard.py --auto`` / ``--explore``), which shares one
+   ``SteeringPolicy`` brain and one ``CommandEmitter``. Prefer the deck.
 Modes: manual | observe | search | scan360
 CTRL+C always sends STOP.
 """
@@ -9,6 +15,7 @@ import argparse
 import sys
 import threading
 import time
+import warnings
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -21,10 +28,14 @@ from software.camera.esp32_stream import ESP32Stream
 from software.camera.frame_manager import FrameManager
 from software.control.odometry import odometry_from_config
 from software.control.pid import pid_from_config
+from software.control.steering import (
+    AntiOscillation,
+    SearchRotation,
+    command_for_position,
+    p_steer_speed,
+)
 from software.hardware.arduino_serial import ArduinoSerial
-from software.navigation.decision_engine import DecisionEngine
 from software.navigation.obstacle_avoidance import ObstacleAvoidance
-from software.navigation.target_search import TargetSearch
 from software.perception.object_tracker import ObjectTracker
 from software.perception.scene_analyzer import SceneAnalyzer
 from software.safety.failsafe import safe_stop
@@ -34,6 +45,14 @@ from software.fusion.sensor_fusion import SensorFusion
 from software.telemetry.event_logger import EventLogger
 from software.telemetry.mission_logger import MissionLogger
 from software.utils.config_loader import load_config
+
+#: Autonomous modes this legacy path still serves. The Mission Deck supersedes
+#: them, so constructing the app in one of these modes flags the deprecation.
+LEGACY_AUTONOMOUS_MODES: frozenset[str] = frozenset({"observe", "search", "scan360"})
+LEGACY_NOTICE = (
+    "RoverApp autonomous modes (observe/search/scan360) are a legacy headless "
+    "path superseded by the Mission Deck (scripts/dashboard.py --auto/--explore)."
+)
 
 
 class RoverApp:
@@ -93,14 +112,14 @@ class RoverApp:
         )
         # control: steering_kp/steering_min_pwm -> P-steering turn PWM on L/R
         ctl = cfg.get("control", {})
-        self.engine = DecisionEngine(
-            nav.get("center_tolerance", 0.06),
-            nav["min_command_duration_s"],
-            nav["decision_cooldown_s"],
-            steering_kp=float(ctl.get("steering_kp", 0.0)),
-            steering_min_pwm=int(ctl.get("steering_min_pwm", 120)),
+        self.center_tolerance = float(nav.get("center_tolerance", 0.06))
+        self.osc = AntiOscillation(
+            nav["min_command_duration_s"], nav["decision_cooldown_s"]
         )
-        self.search = TargetSearch(
+        self.steering_kp = float(ctl.get("steering_kp", 0.0))
+        self.steering_min_pwm = int(ctl.get("steering_min_pwm", 120))
+        self.nav_state = "IDLE"
+        self.search = SearchRotation(
             nav["search_timeout_s"],
             nav["max_search_rotations"],
             rov["search_rotation_duration_s"],
@@ -122,7 +141,8 @@ class RoverApp:
         self.drive_pid = pid_from_config(cfg)
         self.odometry = odometry_from_config(cfg)
         self.sensor_fusion = SensorFusion(
-            emergency_obstacle_dist_m=float(rov.get("emergency_stop_distance_cm", 15.0)) / 100.0,
+            emergency_obstacle_dist_m=float(rov.get("emergency_stop_distance_cm", 15.0))
+            / 100.0,
             min_target_confidence=self.target_confidence,
             wheel_odometry=self.odometry,
         )
@@ -130,6 +150,9 @@ class RoverApp:
         self.mission_logger = MissionLogger(cfg["logging"]["dir"])
         self.running = False
         self.state: dict = {"mode": mode, "command": "S", "safety": "-"}
+        if mode in LEGACY_AUTONOMOUS_MODES:
+            warnings.warn(LEGACY_NOTICE, DeprecationWarning, stacklevel=2)
+            self.logger.log_text(f"DEPRECATED path: {LEGACY_NOTICE}")
         if mode == "search":
             self.search.start()
 
@@ -209,12 +232,14 @@ class RoverApp:
                 cam_cfg.get("enhance_clahe")
                 or cam_cfg.get("enhance_sharpen")
                 or cam_cfg.get("enhance_denoise")
+                or cam_cfg.get("enhance_fourier")
             ):
                 frame = enhance_for_inference(
                     frame,
                     clahe=bool(cam_cfg.get("enhance_clahe", False)),
                     sharpen=bool(cam_cfg.get("enhance_sharpen", False)),
                     denoise=bool(cam_cfg.get("enhance_denoise", False)),
+                    fourier=bool(cam_cfg.get("enhance_fourier", False)),
                 )
             t0 = time.time()
             try:
@@ -227,48 +252,40 @@ class RoverApp:
         fw = float(frame.shape[1]) if frame is not None else 640.0
         scene = self.scene.analyze(target, dets, fw)
 
-        # desired command per mode (decision carries the P-steering speed)
-        decision = None
+        # desired command per mode: the canonical control-layer helpers own the
+        # position -> command mapping (shared with the Mission Deck) and the
+        # anti-oscillation hold.
+        now = time.time()
+        cmd = "S"
         if self.mode == "search":
-            cmd, done, _msg = self.search.update(target is not None)
+            rot_cmd, done, _msg = self.search.update(target is not None, now=now)
             if scene.target:
-                decision = self.engine.decide(
-                    scene.position,
-                    scene.very_close,
-                    True,
-                    center_error=scene.center_error,
+                cmd, self.nav_state = command_for_position(
+                    scene.position, scene.very_close, True
                 )
-                cmd = decision.command
             else:
-                self.engine.to_search()
-                if done and not self.search.s.active:
-                    cmd = "S"
+                self.nav_state = "SEARCHING"
+                cmd = "S" if (done and not self.search.active) else rot_cmd
         elif self.mode == "scan360":
             # scan whenever the target is absent; approach when it is visible
-            if not self.search.s.active:
-                self.search.start()
-            cmd, done, _msg = self.search.update(target is not None)
+            if not self.search.active:
+                self.search.start(now=now)
+            rot_cmd, _done, _msg = self.search.update(target is not None, now=now)
             if scene.target:
-                decision = self.engine.decide(
-                    scene.position,
-                    scene.very_close,
-                    True,
-                    center_error=scene.center_error,
+                cmd, self.nav_state = command_for_position(
+                    scene.position, scene.very_close, True
                 )
-                cmd = decision.command
+            else:
+                self.nav_state = "SEARCHING"
+                cmd = rot_cmd
         elif self.mode == "observe":
             if target is None:
-                cmd = "S"
+                self.nav_state = "OBSERVE"
             else:
-                decision = self.engine.decide(
-                    scene.position,
-                    scene.very_close,
-                    True,
-                    center_error=scene.center_error,
+                cmd, self.nav_state = command_for_position(
+                    scene.position, scene.very_close, True
                 )
-                cmd = decision.command
-        else:
-            cmd = "S"
+        cmd = self.osc.apply(cmd, now)
 
         # safety gate first, obstacle layer second: SafetyManager must see the
         # raw command so the R4 emergency latch actually engages (M1)
@@ -277,17 +294,19 @@ class RoverApp:
             cmd, dist, ser_ok, cam_ok, conf, self.target_confidence
         )
         final = self.avoid.override(verdict.command, dist)
-        # reflect the safety outcome in the engine state machine (docs/19)
+        # reflect the safety outcome in the navigation state machine (docs/19)
         if verdict.reason.startswith("EMERGENCY"):
-            self.engine.emergency()
+            self.nav_state = "EMERGENCY_STOP"
         elif verdict.reason.startswith("CAUTION"):
-            self.engine.state = "AVOIDING"
+            self.nav_state = "AVOIDING"
         # Protocol v2: attach the proportional turn speed only while the
         # final command still matches the steering decision (L/R); safety or
         # obstacle overrides downgrade to a bare command.
         turn_speed = (
-            decision.speed
-            if decision is not None and final == decision.command
+            p_steer_speed(
+                cmd, scene.center_error, self.steering_kp, self.steering_min_pwm
+            )
+            if final == cmd
             else None
         )
         self.serial.send(final, speed=turn_speed)

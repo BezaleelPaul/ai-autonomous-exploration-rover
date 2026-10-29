@@ -126,6 +126,81 @@ def test_detect_board_port_skips_system_ports(monkeypatch):
     assert detect_board_port() == "COM5"
 
 
+class _Port:
+    def __init__(self, device, description, vid=None, manufacturer=None):
+        self.device = device
+        self.description = description
+        self.vid = vid
+        self.manufacturer = manufacturer
+
+
+def test_detect_board_port_prefers_the_arduino_over_an_esp32_bridge(monkeypatch):
+    """Both boards are "board-like"; commands belong to the Arduino."""
+    import serial.tools.list_ports as lp
+
+    from software.hardware.arduino_serial import detect_board_port
+
+    monkeypatch.setattr(
+        lp,
+        "comports",
+        lambda: [
+            _Port(
+                "COM4",
+                "Silicon Labs CP210x USB to UART Bridge (COM4)",
+                vid=0x10C4,
+                manufacturer="Silicon Labs",
+            ),
+            _Port(
+                "COM8",
+                "Arduino Uno (COM8)",
+                vid=0x2341,
+                manufacturer="Arduino LLC (www.arduino.cc)",
+            ),
+        ],
+    )
+    assert detect_board_port() == "COM8"
+
+
+def test_detect_board_port_matches_the_arduino_by_manufacturer(monkeypatch):
+    import serial.tools.list_ports as lp
+
+    from software.hardware.arduino_serial import detect_board_port
+
+    monkeypatch.setattr(
+        lp,
+        "comports",
+        lambda: [
+            _Port("COM5", "USB-SERIAL CH340 (COM5)", vid=0x1A86),
+            _Port(
+                "COM9", "USB-SERIAL Device (COM9)", vid=None, manufacturer="Arduino SA"
+            ),
+        ],
+    )
+    assert detect_board_port() == "COM9"
+
+
+def test_detect_board_port_keeps_the_sole_esp32_when_no_arduino_is_present(
+    monkeypatch,
+):
+    import serial.tools.list_ports as lp
+
+    from software.hardware.arduino_serial import detect_board_port
+
+    monkeypatch.setattr(
+        lp,
+        "comports",
+        lambda: [
+            _Port(
+                "COM4",
+                "Silicon Labs CP210x USB to UART Bridge (COM4)",
+                vid=0x10C4,
+                manufacturer="Silicon Labs",
+            )
+        ],
+    )
+    assert detect_board_port() == "COM4"
+
+
 def test_detect_board_port_returns_none_without_board(monkeypatch):
     import serial.tools.list_ports as lp
 

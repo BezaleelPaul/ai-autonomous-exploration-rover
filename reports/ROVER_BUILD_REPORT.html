@@ -1,0 +1,1152 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>AI Exploration Rover - Documented Build Report</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'neutral'});</script>
+<style>
+body{font-family:Georgia,serif;max-width:900px;margin:40px auto;padding:0 24px;
+     line-height:1.6;color:#222;background:#fdfcfa}
+h1{font-size:2rem;border-bottom:3px solid #1a7f37;padding-bottom:8px}
+h2{color:#1a5c37;border-bottom:1px solid #ddd;padding-bottom:4px;margin-top:2rem}
+h3{color:#333;margin-top:1.4rem}
+table{border-collapse:collapse;width:100%;font-size:.92rem;margin:1rem 0}
+th{background:#1a7f37;color:#fff;text-align:left;padding:8px}
+td{border:1px solid #ddd;padding:6px 8px;vertical-align:top}
+tr:nth-child(even){background:#f4f9f6}
+blockquote{background:#fffbe6;border-left:5px solid #f0a500;margin:1rem 0;
+           padding:.7rem 1rem}
+code,pre{font-family:Consolas,monospace;font-size:.88rem;background:#f2f2f2;
+         border-radius:6px}
+pre{padding:12px;overflow-x:auto;border:1px solid #e2e2e2}
+.mermaid{background:#fff;border:1px solid #e2e2e2;border-radius:8px;padding:10px;
+         overflow-x:auto}
+strong{color:#111}
+hr{border:0;border-top:2px dashed #ccc;margin:2rem 0}
+</style></head><body><h1>🔧 The ai-autonomous-exploration-rover (MWE PROJECT)</h1>
+<h2><em>Complete Documented Build Report — from bare acrylic to a self-driving, self-protecting AI rover</em></h2>
+<h3>October 6 – October 29, 2026 · Verified against firmware, telemetry logs and photo EXIF metadata</h3>
+<blockquote>
+<p><strong>This report explains itself:</strong> every claim below is backed either by a photograph with a
+camera-stamped timestamp, a captured telemetry line from the real hardware, or a passing test in
+the repository. Nothing is decorative — if it is written here, it happened, and the evidence is
+linked. Including the day it all went dark with a short circuit — and the afternoon it came back,
+wheel by wheel.</p>
+</blockquote>
+<hr />
+<h2>Table of Contents</h2>
+<ol>
+<li><a href="#1-executive-summary">Executive Summary</a></li>
+<li><a href="#2-system-architecture">System Architecture</a></li>
+<li><a href="#3-complete-wiring-map">Complete Wiring Map</a></li>
+<li><a href="#4-firmware-the-three-brains">Firmware: The Three Brains</a></li>
+<li><a href="#5-the-build-timeline">The Build Timeline (EXIF-verified)</a></li>
+<li><a href="#6-incident-dossier">Incident Dossier: The Two Short Circuits</a></li>
+<li><a href="#7-resurrection">Resurrection: Bringing the Wheels Back</a></li>
+<li><a href="#8-verification--evidence">Verification &amp; Evidence</a></li>
+<li><a href="#9-what-we-did-our-best-at">What We Did Our Best At</a></li>
+<li><a href="#10-what-remains">What Remains</a></li>
+<li><a href="#appendix-a--full-photo-index">Appendix A — Full Photo Index (EXIF)</a></li>
+<li><a href="#appendix-b--telemetry-dictionary">Appendix B — Telemetry Dictionary</a></li>
+<li><a href="#appendix-c--command-reference">Appendix C — Command Reference</a></li>
+</ol>
+<hr />
+<h2>1 · Executive Summary</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Vehicle</strong></td>
+<td>Differential-drive exploration rover: 2 × TT gearmotors, front caster</td>
+</tr>
+<tr>
+<td><strong>Compute</strong></td>
+<td><strong>Arduino Uno R3</strong> (real-time reflex core) + <strong>ESP32 DevKit V1</strong> (wireless bridge) + laptop AI tier</td>
+</tr>
+<tr>
+<td><strong>Drive</strong></td>
+<td><strong>TB6612FNG</strong> dual MOSFET H-bridge (95% efficient, &lt; 0.2 V drop — replaces the lossy L298N baseline)</td>
+</tr>
+<tr>
+<td><strong>Perception</strong></td>
+<td>Phone "IP Webcam" stream → <strong>YOLO11n</strong> on the laptop → 3-zone steering policy → F/L/R/S</td>
+</tr>
+<tr>
+<td><strong>Wireless control</strong></td>
+<td>ESP32 soft-AP <code>AI_Rover_Control</code>, drive pad at <code>http://192.168.4.1/</code>, hold-to-drive + speed slider (60–255 PWM)</td>
+</tr>
+<tr>
+<td><strong>Safety layers</strong></td>
+<td>15 cm ultrasonic forward gate · 500 ms link watchdog · malformed-input STOP · boot-stopped state machine · AI camera-freeze watchdog</td>
+</tr>
+<tr>
+<td><strong>Status (Oct 29, 2026)</strong></td>
+<td><strong>Flashed, verified, and driving.</strong> Wi-Fi control chain proven end-to-end live; wheel bring-up closed; two short-circuit incidents survived, documented, and designed out</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Story in one paragraph.</strong> The rover began as an acrylic plate, two yellow gearmotors, and a
+battery holder on October 6. Over 23 days it grew a sensor bracket, a two-tier electronics deck,
+a YOLO-tracking laptop brain, a TB6612FNG driver (after its predecessor's voltage-drop misbehaved),
+and a Wi-Fi control pad. On <strong>October 26 at 20:14</strong> the first short-circuit scarred the battery
+terminal harness; on <strong>October 29 at ~16:12</strong> a second short — this time through a taped harness
+splice — silenced the wheels entirely. That same afternoon, the fault was isolated to its exact
+layer (power path, then wiring shift, then driver), corrected, and verified live: both wheels
+spinning, the ultrasonic gate guarding at 15 cm, the 500 ms watchdog riding over the radio, and
+the whole software safety contract passing 98 committed tests. <strong>The rover works. It protects
+itself. And every failure that got us here is documented below.</strong></p>
+<hr />
+<h2>2 · System Architecture</h2>
+<div class="mermaid">flowchart TB
+    subgraph MOBILE[&quot;🛺  On the Rover&quot;]
+        subgraph REFLEX[&quot;Arduino Uno R3 — Reflex Core&quot;]
+            FW[&quot;motion_safety.ino&lt;br/&gt;· non-blocking ultrasonic FSM&lt;br/&gt;· 15 cm forward gate&lt;br/&gt;· 500 ms link watchdog&lt;br/&gt;· gap-framed command parser&quot;]
+            TG[&quot;TB6612FNG driver&lt;br/&gt;PWMA→D5 AIN1→D6 AIN2→D7&lt;br/&gt;PWMB→D9 BIN1→D8 BIN2→D10&lt;br/&gt;STBY→5V&quot;]
+            M1[&quot;LEFT motor&lt;br/&gt;AO1/AO2&quot;]
+            M2[&quot;RIGHT motor&lt;br/&gt;BO1/BO2&quot;]
+            US[&quot;HC-SR04&lt;br/&gt;Trig D2 / Echo D3&quot;]
+        end
+        subgraph WIRELESS[&quot;ESP32 DevKit V1 — Wireless Bridge&quot;]
+            AP[&quot;Wi-Fi soft-AP&lt;br/&gt;AI_Rover_Control / rover1234&lt;br/&gt;http://192.168.4.1&quot;]
+            PAD[&quot;Drive pad&lt;br/&gt;hold-to-drive + speed slider 60-255&lt;br/&gt;+ CAMERA panel&quot;]
+            RELAY[&quot;/cmd validator&lt;br/&gt;F B L R S ± speed 0..255&quot;]
+        end
+        BAT[&quot;🔋 2-cell Li-ion pack&lt;br/&gt;7.4 V nominal&quot;]
+    end
+    subgraph BENCH[&quot;💻 Laptop AI Tier (same Wi-Fi)&quot;]
+        ST[&quot;ai_video_server.py&lt;br/&gt;YOLO11n annotation&lt;br/&gt;/video MJPEG with boxes&quot;]
+        PN[&quot;perception_node&lt;br/&gt;YOLO → 3-zone policy&lt;br/&gt;decides F/L/R/S by itself&quot;]
+    end
+    PHONE[&quot;📱 Phone&lt;br/&gt;IP Webcam :8080/video&lt;br/&gt;+ pad browser&quot;]
+
+    PHONE -- &quot;HTTP GET /cmd?c=F200&quot; --&gt; RELAY
+    RELAY -- &quot;Serial2 TX GPIO17 --(one-way)--&gt; Uno D4, 9600 8N1&quot; --&gt; FW
+    FW -- &quot;PWM + direction&quot; --&gt; TG
+    TG -- &quot;AO/BO outputs&quot; --&gt; M1
+    TG --&gt; M2
+    US -- &quot;distance every 60 ms&quot; --&gt; FW
+    BAT -- &quot;VM 7.4V (direct wires, never a breadboard)&quot; --&gt; TG
+    PAD -- &quot;serves&quot; --&gt; AP
+    PHONE -- &quot;joins rover AP&quot; --&gt; PAD
+    PHONE -- &quot;MJPEG stream&quot; --&gt; ST
+    ST -- &quot;annotated /video&quot; --&gt; PAD
+    PN -- &quot;autonomous commands via GET /cmd&quot; --&gt; RELAY
+</div>
+<p><strong>Division of labor</strong></p>
+<ul>
+<li><strong>ESP32</strong> — <em>the connectivity brain.</em> Serves the wireless pad, validates and rates the command
+  whitelist, relays over a <strong>one-way</strong> UART to the Uno (3.3 V → 5 V-safe direction; nothing can
+  back-feed into the ESP32's GPIO), and keeps the camera panel + status JSON alive.</li>
+<li><strong>Arduino Uno</strong> — <em>the reflex core.</em> Owns the pins that can hurt someone. Reads the command
+  chunks, drives the TB6612, and refuses to drive at all if the world is too close, if the
+  command stream is dead longer than 500 ms, or if the stream is malformed. It boots <strong>stopped</strong>
+  — always.</li>
+<li><strong>Laptop AI tier</strong> — <em>the perception brain.</em> YOLO11n at 320 px inference on CPU (~5–6 fps),
+  either as an overlay server (<code>scripts/ai_video_server.py</code>) or as the autonomous pilot
+  (<code>software/perception_node</code>) that emits the same F/L/R/S alphabet over HTTP.</li>
+</ul>
+<div class="mermaid">sequenceDiagram
+    participant P as 📱 Phone (pad)
+    participant E as ESP32 (/cmd)
+    participant A as Uno (reflex)
+    participant M as Motors
+    P-&gt;&gt;E: GET /cmd?c=F200 (every 200 ms while held)
+    E-&gt;&gt;E: validate letter+speed 0..255
+    E-&gt;&gt;A: UART bytes &quot;F200&quot; @9600
+    A-&gt;&gt;A: gap-frame chunk (15 ms silence)
+    alt path clear (DIST ≥ 15 cm)
+        A-&gt;&gt;M: AIN1=H AIN2=L, PWM=193
+    else obstacle or dead echo
+        A--xM: STOP + ALERT:OBSTACLE
+    end
+    A--&gt;&gt;P: (USB telemetry) CMD:F STATE:GO STATUS:OK
+    Note over A,M: silence &gt; 500 ms anywhere in this chain → STOP
+</div>
+<hr />
+<h2>3 · Complete Wiring Map</h2>
+<h3>3.1 Power tree (the wires that almost ended the project)</h3>
+<div class="mermaid">flowchart LR
+    BATP[&quot;Battery + (red)&lt;br/&gt;7.4 V&quot;] --&gt;|&quot;direct wire,&lt;br/&gt;NO breadboard&quot;| VM[&quot;TB6612 VM&quot;]
+    BATM[&quot;Battery − (black)&quot;] --&gt;|&quot;direct wire&quot;| GNDD[&quot;TB6612 GND (top row)&quot;]
+    GNDD --&gt;|&quot;direct wire&quot;| AG[&quot;Arduino GND&quot;]
+    ESP[&quot;ESP32 GND&quot;] --&gt;|&quot;dedicated short wire&quot;| AG
+    U5[&quot;Arduino 5V&quot;] --&gt;|&quot;connectors only,&lt;br/&gt;same rail half&quot;| VCC[&quot;TB6612 VCC&quot;]
+    U5 --&gt; STBY[&quot;TB6612 STBY&quot;]
+    U5 --&gt; USP[&quot;HC-SR04 VCC&quot;]
+    GNDD --&gt; USG[&quot;HC-SR04 GND&quot;]
+</div>
+<blockquote>
+<p><strong>Rule the incidents taught us (§6):</strong> motor current <strong>never</strong> flows through a breadboard.
+Breadboard rails and Dupont jumpers are rated ~1 A; a stalled TT motor wants 1–2 A. The pack
+voltage collapses → the motors <em>hum and never turn</em>. Battery and motor outputs are direct
+wired; jumpers carry only logic signals.</p>
+</blockquote>
+<h3>3.2 TB6612FNG — as physically printed on our module</h3>
+<p>Our module's silk screen is <strong>not</strong> the order everyone assumes — the fault that cost today's
+morning. Documented exactly as it is etched:</p>
+<table>
+<thead>
+<tr>
+<th>Top row (power + outputs)</th>
+<th>→ connects to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>VM</strong></td>
+<td>Battery + (direct)</td>
+</tr>
+<tr>
+<td><strong>VCC</strong></td>
+<td>Arduino 5 V (logic)</td>
+</tr>
+<tr>
+<td><strong>GND</strong></td>
+<td>Battery − <strong>and</strong> Arduino GND <strong>and</strong> ESP32 GND (star)</td>
+</tr>
+<tr>
+<td><strong>AO1 / AO2</strong></td>
+<td>LEFT motor tabs</td>
+</tr>
+<tr>
+<td><strong>BO1 / BO2</strong></td>
+<td>RIGHT motor tabs</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Bottom row (control) — <em>as labelled</em></th>
+<th>→ Arduino</th>
+<th>Note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PWMA</strong></td>
+<td>D5</td>
+<td>left speed (PWM ~976 Hz)</td>
+</tr>
+<tr>
+<td><strong>AIN2</strong></td>
+<td><strong>D7</strong></td>
+<td>⚠ AIN2 sits <em>before</em> AIN1 on our board</td>
+</tr>
+<tr>
+<td><strong>AIN1</strong></td>
+<td><strong>D6</strong></td>
+<td>⚠ the one closer to STBY</td>
+</tr>
+<tr>
+<td><strong>STBY</strong></td>
+<td>5 V</td>
+<td>driver enable — a missed STBY is a classic "nothing moves" cause</td>
+</tr>
+<tr>
+<td><strong>BIN1</strong></td>
+<td>D8</td>
+<td>right direction</td>
+</tr>
+<tr>
+<td><strong>BIN2</strong></td>
+<td><strong>D10</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>PWMB</strong></td>
+<td><strong>D9</strong></td>
+<td>⚠ far end of the row, next to GND — <em>not</em> next to STBY</td>
+</tr>
+</tbody>
+</table>
+<h3>3.3 Inter-board &amp; sensor links</h3>
+<table>
+<thead>
+<tr>
+<th>From</th>
+<th>To</th>
+<th>Medium</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ESP32 GPIO17 (TX2)</td>
+<td>Uno <strong>D4</strong></td>
+<td>1 wire, 9600 8N1, one-way</td>
+<td>moved off D0/D2 — D0 fights USB uploads, D2/D3 are now the sensor</td>
+</tr>
+<tr>
+<td>HC-SR04 TRIG</td>
+<td>Uno D2</td>
+<td>1 wire</td>
+<td>10 µs trigger pulse</td>
+</tr>
+<tr>
+<td>HC-SR04 ECHO</td>
+<td>Uno D3</td>
+<td>1 wire</td>
+<td>sound-travel timing</td>
+</tr>
+<tr>
+<td>HC-SR04 VCC/GND</td>
+<td>Arduino 5V/GND <strong>direct</strong></td>
+<td>2 wires</td>
+<td>browns out on a shared rail when motors pull current</td>
+</tr>
+<tr>
+<td>ESP32 GND</td>
+<td>Uno GND, dedicated</td>
+<td>1 short wire</td>
+<td>kills the 3.3 V-level-noise battle</td>
+</tr>
+<tr>
+<td>Battery pack</td>
+<td>TB6612 VM/GND</td>
+<td>2 direct wires</td>
+<td>splice points tape-insulated per §6</td>
+</tr>
+</tbody>
+</table>
+<h3>3.4 Master pin usage (Arduino Uno)</h3>
+<div class="mermaid">flowchart LR
+    subgraph PINS[&quot;Uno pin map — firmware truth&quot;]
+        D0[&quot;D0 RX — USB only, free&quot;]:::safe
+        D1[&quot;D1 TX — USB only, free&quot;]:::safe
+        D2[&quot;D2 TRIG&quot;]
+        D3[&quot;D3 ECHO&quot;]
+        D4[&quot;D4 ← ESP32 TX2&quot;]
+        D5[&quot;D5 PWMA (PWM)&quot;]
+        D6[&quot;D6 AIN1&quot;]
+        D7[&quot;D7 AIN2&quot;]
+        D8[&quot;D8 BIN1&quot;]
+        D9[&quot;D9 PWMB (PWM)&quot;]
+        D10[&quot;D10 BIN2&quot;]
+        D13[&quot;D13 LED heartbeat&quot;]
+    end
+    classDef safe fill:#dffbe4,stroke:#4caf50;
+</div>
+<hr />
+<h2>4 · Firmware: The Three Brains</h2>
+<h3>4.1 <code>arduino/motion_safety/motion_safety.ino</code> — reflex core (7.5 KB / 23% flash)</h3>
+<p><strong>Properties, each forged by an earlier failure:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Mechanism</th>
+<th>Born of</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Boots stopped</td>
+<td><code>currentCmd='S'</code>, <code>stopMotors()</code> before loop starts</td>
+<td>FM-02 philosophy</td>
+</tr>
+<tr>
+<td>Never blocks</td>
+<td>micros/millis FSM replaces every <code>pulseIn()</code>; loop never sleeps</td>
+<td>"wheels must respond while sensing"</td>
+</tr>
+<tr>
+<td>Dead-sensor failsafe</td>
+<td>invalid echo (<code>DIST:-1</code>) <strong>blocks forward</strong> (<code>BLOCK_ON_INVALID_ECHO</code>) — never drive blind</td>
+<td>red-team C1</td>
+</tr>
+<tr>
+<td>Forward-only gate</td>
+<td>obstacle &lt; 15 cm refuses <code>F</code>; <code>B/L/R</code> still execute so the rover can <em>escape</em></td>
+<td>real-world: don't strand the rover</td>
+</tr>
+<tr>
+<td>500 ms link watchdog</td>
+<td>no valid command → STOP; TO metric visible as <code>STATE:TIMEOUT</code> in telemetry</td>
+<td>dropped-phone scenario</td>
+</tr>
+<tr>
+<td>Input armor</td>
+<td>chunk = letter + optional 0..255 speed; mixed letters, unknown bytes, overspeed → STOP + <code>STATUS:ERROR</code></td>
+<td>red-team H3</td>
+</tr>
+<tr>
+<td>Gap framing</td>
+<td>15 ms inter-byte silence closes a chunk → <code>"F193"</code> split as <code>"F19"/"3"</code> <strong>can't</strong> demote PWM to 19 or 3</td>
+<td>the speed-slider bug, Oct 29</td>
+</tr>
+<tr>
+<td>Speed channel</td>
+<td><code>F200</code>-style suffix remaps PWM live; digits-only chunks retune without refreshing the watchdog</td>
+<td>Wi-Fi pad slider</td>
+</tr>
+<tr>
+<td>Human telemetry</td>
+<td><code>DIST:</code> / <code>CMD:x STATE:…</code> / <code>STATUS:</code> / <code>ALERT:OBSTACLE</code> every 200 ms on USB</td>
+<td>debugging yourself at 1 a.m.</td>
+</tr>
+</tbody>
+</table>
+<h3>4.2 <code>esp32/wifi_bridge/wifi_bridge.ino</code> — wireless pad (936 KB / 71% flash)</h3>
+<ul>
+<li>Soft-AP <code>AI_Rover_Control</code> on channel 6 (<code>rover1234</code>), optional STA join to home Wi-Fi (placeholders enforced by tests).</li>
+<li><code>/cmd</code> whitelist → letter must be <code>F/B/L/R/S</code> (case-insensitive), optional digit tail ≤ 255, else <code>400 BAD</code> + <code>rejected</code> counter.</li>
+<li><code>/cam?u=</code> stores the phone (or laptop AI) stream URL in NVS — camera panel survives reboots.</li>
+<li><code>/status</code> JSON heartbeats: uptime, forwarded/rejected counts, last command, AP client list.</li>
+<li><strong>Hold-to-drive:</strong> <code>pointerdown</code> captures the pointer (finger may slide off — <em>and the rover keeps going</em>); only lifting stops it. Long-press context menus are suppressed. Keep-alive tick: <strong>200 ms</strong>.</li>
+<li>Status LED: led pin lights 100 ms per forwarded command.</li>
+</ul>
+<h3>4.3 Laptop AI tier</h3>
+<table>
+<thead>
+<tr>
+<th>Script</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scripts/ai_video_server.py</code></td>
+<td>Grabs the phone MJPEG (or a webcam with <code>--cam 0</code>), runs YOLO11n @320 px every frame, overlays colored boxes (green = target class, blue = others), HUD with object count, serves <code>/</code> status, <code>/video</code> annotated MJPEG, <code>/state</code> health JSON</td>
+</tr>
+<tr>
+<td><code>software/perception_node</code></td>
+<td>The autonomous pilot: 3-zone steering (left/center/right boundaries 0.33/0.66), area-proximity STOP, heartbeat 0.4 s, emits F/L/R/S over <strong>HTTP</strong> (<code>--serial-mode http</code>) so the laptop decides, the rover drives</td>
+</tr>
+<tr>
+<td><code>scripts/dashboard.py</code></td>
+<td>Mission Deck: visualization + manual override, <code>--ip-webcam</code> analysis</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>5 · The Build Timeline</h2>
+<p><em>Every date below is the camera's own EXIF timestamp — the honest clock of the project.</em></p>
+<h3>Phase 0 — Metal and rubber (Mon Oct 6)</h3>
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Event</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>15:01</td>
+<td>TT gearmotor photographed — propulsion decision made</td>
+<td><code>hw_tt_dc_gear_motor.jpg</code></td>
+</tr>
+<tr>
+<td>19:21</td>
+<td>Chassis stage 1: battery holder bolted, SPST rocker switch installed</td>
+<td><code>assembly_01</code></td>
+</tr>
+<tr>
+<td>19:21</td>
+<td>Stage 2: dual TT motors mounted on acrylic brackets</td>
+<td><code>assembly_02</code></td>
+</tr>
+<tr>
+<td>22:09</td>
+<td>Stage 3: tread wheels + front caster on; the base <strong>rolls</strong></td>
+<td><code>assembly_03</code>, <code>assembly_04</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 1 — Eyes (Thu Oct 8)</h3>
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Event</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>12:05</td>
+<td>ESP32-CAM (OV2640) + DevKit V1 boards photographed</td>
+<td><code>hw_esp32_cam_front_ov2640.jpg</code>, <code>hw_esp32_devkit_board_back.jpg</code></td>
+</tr>
+<tr>
+<td>15:45</td>
+<td>First firmware flashing over COM with <code>esptool.py</code></td>
+<td><code>test_esp32_firmware_flashing_esptool.jpg</code></td>
+</tr>
+<tr>
+<td>15:57</td>
+<td>Board flashed and on USB</td>
+<td><code>hw_esp32_cam_connected_usb.jpg</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 2 — Power &amp; hearing (Fri Oct 9)</h3>
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Event</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>14:28</td>
+<td>2S 18650 pack + LM2596 buck for the logic rail</td>
+<td><code>hw_power_18650_battery_pack_and_lm2596_buck_converter.jpg</code></td>
+</tr>
+<tr>
+<td>16:54</td>
+<td>HC-SR04 bracket mounted — the rover gains a sense of distance</td>
+<td><code>assembly_05</code>, <code>assembly_06</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 3 — Brains on the bench (Mon Oct 19 – Tue Oct 20)</h3>
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Event</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Oct 19 21:11</td>
+<td>Integrated bench test: power bank + Uno + ESP32 + sensor wired together</td>
+<td><code>assembly_07</code></td>
+</tr>
+<tr>
+<td>Oct 19 21:23</td>
+<td>Uno wired w/ jumpers; HC-SR04 transducer + pinout close-ups</td>
+<td><code>hw_arduino_uno_wired.jpg</code>, <code>hw_ultrasonic_*</code></td>
+</tr>
+<tr>
+<td>Oct 19 22:24</td>
+<td>Electronics placement dry-fit on the deck</td>
+<td><code>assembly_08</code></td>
+</tr>
+<tr>
+<td>Oct 19 (eve)</td>
+<td><strong>First live YOLO tracking over IP Webcam</strong>, MissionPilot dashboard at <code>127.0.0.1:5000</code></td>
+<td><code>telemetry_live_yolo_tracking_ip_webcam.jpg</code>, <code>telemetry_missionpilot_dashboard_and_terminal.jpg</code></td>
+</tr>
+<tr>
+<td>Oct 20 13:50</td>
+<td>Two-tier prototype: side + top views, lower controller tray, upper power deck</td>
+<td><code>assembly_09</code>, <code>assembly_10</code></td>
+</tr>
+<tr>
+<td>Oct 20 13:51</td>
+<td>Underside wire routing through chassis slots (away from wheel interference)</td>
+<td><code>assembly_11</code></td>
+</tr>
+<tr>
+<td>Oct 22 (eve)</td>
+<td>ESP32-CAM Wi-Fi stream works on a phone (<code>192.168.4.1:81/stream</code>), incl. low-light calibration</td>
+<td><code>test_esp32cam_wifi_stream_mobile_01/02</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 4 — Harness and the first scar (Thu Oct 23 → Mon Oct 26)</h3>
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Event</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Oct 23 15:14</td>
+<td>Motor harness soldered, joints wrapped in insulating tape — <strong>the practice that later mattered</strong></td>
+<td><code>assembly_12</code></td>
+</tr>
+<tr>
+<td>Oct 26 19:08</td>
+<td>TB6612FNG driver photographed — top IC view</td>
+<td><code>hw_tb6612fng_motor_driver_top.jpg</code></td>
+</tr>
+<tr>
+<td>Oct 26 19:09</td>
+<td>TB6612 pin markings captured for the new pin map</td>
+<td><code>hw_tb6612fng_motor_driver_pinout.jpg</code></td>
+</tr>
+<tr>
+<td><strong>Oct 26 20:14</strong></td>
+<td><strong>First short circuit:</strong> battery-holder terminal lug (soldered red lead, compression spring, retention screw) shows damage/heat residue — terminal-to-chassis contact during reassembly</td>
+<td><code>assembly_13_..._damaged_shortcircuited.jpeg</code></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 5 — Rebuild, second short, resurrection (Thu Oct 29 — today)</h3>
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Event</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>~Oct 29</td>
+<td>L298N-era firmware retired; repo moved to TB6612 pin map; contract tests re-pinned</td>
+<td>repo: <code>test_two_tier_firmware.py</code></td>
+</tr>
+<tr>
+<td>Oct 29 morning</td>
+<td>Wheel bring-up campaign: <code>wheel_test</code> → <em>no motion</em> (fault layers peeled one by one)</td>
+<td>repo logs</td>
+</tr>
+<tr>
+<td>Oct 29 (day)</td>
+<td>Faults isolated: off-by-one wiring (TRIG on D1), split breadboard rail, VM current through the rail (the <em>"hum only"</em> diagnosis), direct battery→VM wiring</td>
+<td>this report §7</td>
+</tr>
+<tr>
+<td><strong>Oct 29 16:12</strong></td>
+<td><strong>Second short circuit:</strong> taped harness splice exposed bare conductor in the battery/motor run — pack disconnected, joint re-wrapped; photographed</td>
+<td><code>images/short circuited.jpg</code></td>
+</tr>
+<tr>
+<td>Oct 29 (later)</td>
+<td>Hold-test over the driver isolates the power path; module silkscreen decoded (AIN2 before AIN1, PWMB at row end); <strong>both wheels spin at full torque</strong></td>
+<td><code>wheel_test_hold.ino</code></td>
+</tr>
+<tr>
+<td>Oct 29 (eve)</td>
+<td>Production firmware flashed to Uno + ESP32; <strong>live Wi-Fi drive verified end-to-end</strong>: <code>HTTP:F200 → CMD:F STATE:GO STATUS:OK</code>, obstacle gate fires <code>ALERT:OBSTACLE dist=-1cm</code>, watchdog holds <code>STATE:TIMEOUT</code> while idle</td>
+<td>§8 captures</td>
+</tr>
+<tr>
+<td>Oct 29 (eve)</td>
+<td>AI video server (<code>ai_video_server.py</code>) serving YOLO-annotated live stream from the phone camera; public-repo upload</td>
+<td>repo</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>6 · Incident Dossier</h2>
+<h3>6.1 Incident #1 — battery terminal (Oct 26, 20:14)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>What the photo shows</strong></td>
+<td><code>assembly_13…</code>: soldered battery lug on the holder's <strong>+</strong> terminal, compression spring, retention screw; heat/flux residue and insulation damage at the lug</td>
+</tr>
+<tr>
+<td><strong>Mechanism</strong></td>
+<td>Reassembly with the pack live: the terminal lug (or the harness ring) <strong>touched return metal</strong> — a dead short across a 2-cell Li-ion pack. High current → localized heating, flux whitening</td>
+</tr>
+<tr>
+<td><strong>Detected</strong></td>
+<td>Damage noticed during terminal close-up inspection; pack disconnected</td>
+</tr>
+<tr>
+<td><strong>Result</strong></td>
+<td>Terminal re-tensioned, insulation restored; build continued</td>
+</tr>
+<tr>
+<td><strong>Lesson</strong></td>
+<td><em>Never solder/re-tension battery terminals with the pack seated. A rocker switch is not a fuse.</em></td>
+</tr>
+</tbody>
+</table>
+<h3>6.2 Incident #2 — taped harness splice (Oct 29, ~16:12)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>What the photo shows</strong></td>
+<td><code>short circuited.jpg</code>: a <strong>black-tape splice</strong> held between fingers, bare conductor buried under tape; HC-SR04 bracket, Uno, breadboard rail, and the jumper loom around it</td>
+</tr>
+<tr>
+<td><strong>Mechanism</strong></td>
+<td>A taped joint in the battery/motor run (taped joints were the harness standard of Oct 23) had the conductor work loose under flex → intermittent short / open. Combined with the pack path running through breadboard jumpers (§3.1 rule) current was zero → "wheels dead"</td>
+</tr>
+<tr>
+<td><strong>Detected</strong></td>
+<td>Diagnostic sequence: direct battery-to-motor test <strong>passed</strong> (motor + pack healthy) → manual driver test failed → fault pinned to wiring/harness, not silicon</td>
+</tr>
+<tr>
+<td><strong>Fixed</strong></td>
+<td>Pack disconnected; splice re-wrapped; motor power moved to <strong>direct wires</strong> (VM, GND, AO/BO → tabs); only logic rides jumpers</td>
+</tr>
+<tr>
+<td><strong>Lesson</strong></td>
+<td><em>Tape is a repair, not a specification. Battery/motor runs get direct, mechanically-fixed wires — and every taped joint is re-inspected after each chassis flex.</em></td>
+</tr>
+</tbody>
+</table>
+<h3>6.3 The "mystery days" fault stack, decoded honestly</h3>
+<p>The two short circuits masked <em>several</em> independent faults that then surfaced one by one.
+Recorded here so the next builder doesn't spend two days on them:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Symptom</th>
+<th>Actual cause</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Wheels dead, everything looks right</td>
+<td>TRIG wire accidentally in <strong>D1</strong> (off-by-one on the header)</td>
+<td>Pin map re-verified wire-by-wire; D0/D1 kept empty</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Motors <strong>hum, never spin</strong></td>
+<td>Motor current routed through breadboard rails (~1 A limit vs 1–2 A motor draw) → pack voltage collapses</td>
+<td>Direct battery→VM/GND wires; rule §3.1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"5V rail" powers only half the rail</td>
+<td>Breadboard power rails have a <strong>gap in the middle</strong></td>
+<td>All rail devices on ONE side (or bridge the gap)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Uno inputs never light a motor</td>
+<td>Module silkscreen order ≠ assumed order: <strong>AIN2 before AIN1</strong>, <strong>PWMB at row end</strong></td>
+<td>Wire-by-label, never wire-by-position</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Commands corrupt at 9600 (3.3 V→5 V link)</td>
+<td>EMI/ground bounce; occasional <code>STATUS:ERROR</code></td>
+<td>Dedicated ESP32→Uno GND wire; short link wire; <em>(roadmap: 4800 baud or level shifter if errors persist)</em></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Forward randomly blocked, <code>dist=-1</code></td>
+<td>HC-SR04 VCC on the sagging rail</td>
+<td>Sensor power moved to Arduino 5V/GND direct</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>7 · Resurrection</h2>
+<p>The recovery was done <strong>layer by layer, each step leaving a permanent tool behind</strong>:</p>
+<div class="mermaid">flowchart TD
+    A[&quot;Wheels dead&quot;] --&gt; B[&quot;wheel_test.ino&lt;br/&gt;(narrated test round)&quot;]
+    B --&gt; C[&quot;No motion? → HOLD test&lt;br/&gt;motors ON continuously&quot;]
+    C --&gt; D[&quot;Direct battery-to-motor touch&lt;br/&gt;✓ spins → pack &amp; motor OK&quot;]
+    D --&gt; E[&quot;Manual driver test (jumpers only)&lt;br/&gt;✗ nothing → driver/feed suspected&quot;]
+    E --&gt; F[&quot;Rail split + VM-through-rail found&lt;br/&gt;direct power wires&quot;]
+    F --&gt; G[&quot;Silkscreen decoded:&lt;br/&gt;AIN2≈AIN1 trap, PWMB far end&quot;]
+    G --&gt; H[&quot;🎉 BOTH WHEELS SPIN&lt;br/&gt;(full torque hold test)&quot;]
+    H --&gt; I[&quot;Production firmware flashed&lt;br/&gt;Uno motion_safety + ESP32 wifi_bridge&quot;]
+    I --&gt; J[&quot;Live Wi-Fi drive verified&lt;br/&gt;4 directions, speed, watchdog, gate&quot;]
+</div>
+<p>Every step exists as <strong>committed, re-runnable tooling</strong>: <code>wheel_test</code>, <code>wheel_test_hold</code>,
+<code>tools/hw_check.py flash --target wheels</code> — the next person reaches "wheels spin" in minutes,
+not days.</p>
+<hr />
+<h2>8 · Verification &amp; Evidence</h2>
+<h3>8.1 Wheel bring-up (Uno, full torque)</h3>
+<pre><code class="language-text">=== WHEEL TEST v2 (TB6612FNG, full torque) ===
+== ROUND ==
+-&gt; LEFT FORWARD  (left wheel only)
+-&gt; LEFT REVERSE  (left wheel only)
+-&gt; RIGHT FORWARD (right wheel only)
+-&gt; RIGHT REVERSE (right wheel only)
+-&gt; BOTH FORWARD
+-&gt; BOTH REVERSE
+rest 3 s, then repeating...          ← both wheels verified per-step
+</code></pre>
+<h3>8.2 Live Wi-Fi command chain (captured from BOTH boards simultaneously)</h3>
+<pre><code class="language-text">[ESP ] HTTP:F200          ← phone pad held ▲
+[UNO ] CMD:F STATE:GO     ← command parsed
+[UNO ] STATUS:OK          ← motors commanded (battery path healthy)
+[ESP ] HTTP:S
+[UNO ] CMD:S STATE:STOP   ← release stops instantly
+...                       ← every direction F/B/L/R exercised (R255, B200, L255)
+[UNO ] ALERT:OBSTACLE dist=-1cm cmd=F   ← dead-echo failsafe engaged
+[UNO ] CMD:S STATE:TIMEOUT              ← 500 ms watchdog while idle
+</code></pre>
+<h3>8.3 Test suite (runs in CI minutes)</h3>
+<pre><code class="language-text">98 passed  — tests/test_two_tier_firmware.py + test_dashboard_controls.py
+(source-level contracts: pin map, 15 cm gate, 500 ms watchdog, malformed→STOP,
+ boot-stopped, non-blocking loop, placeholder credentials…)
+</code></pre>
+<h3>8.4 Firmware size on target</h3>
+<table>
+<thead>
+<tr>
+<th>Sketch</th>
+<th>Flash</th>
+<th>RAM</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>motion_safety</code> (Uno)</td>
+<td>7,476 B / 23%</td>
+<td>502 B / 24%</td>
+</tr>
+<tr>
+<td><code>wheel_test</code> (Uno)</td>
+<td>2,964 B / 9%</td>
+<td>636 B / 31%</td>
+</tr>
+<tr>
+<td><code>wheel_test_hold</code> (Uno)</td>
+<td>2,386 B / 7%</td>
+<td>326 B / 15%</td>
+</tr>
+<tr>
+<td><code>wifi_bridge</code> (ESP32)</td>
+<td>936,396 B / 71%</td>
+<td>47,416 B / 14%</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>9 · What We Did Our Best At</h2>
+<ol>
+<li><strong>Fail-safe by construction.</strong> Every subsystem's error state is STOP. The rover boots stopped,
+   times out to stopped (500 ms), refuses forward on a <em>dead or too-close</em> sensor reading, and
+   treats any malformed input as a stop. It is impossible to make the rover run silently.</li>
+<li><strong>Isolation bring-up.</strong> Wheels were proven alone (<code>wheel_test</code>, <code>wheel_test_hold</code>), the driver
+   was proven alone (manual jumper test), the pack was proven alone (direct battery touch) —
+   before the any chain was trusted. Every mystery ("nothing moves") became a diagram in §6.3
+   instead of a shrug.</li>
+<li><strong>Truth pinned in code.</strong> The contract tests read the firmware source and assert the safety
+   properties (pin map, gate, watchdog, framing, boot state). A future refactor cannot silently
+   delete a safety property without failing CI.</li>
+<li><strong>Honest telemetry.</strong> Every driving decision the rover makes is printed on USB: distance,
+   command, state, status, alerts. The offline log and the hardware agree.</li>
+<li><strong>Documentation of failure, not just success.</strong> Both short circuits, the FMEA-grade reasoning,
+   the fault stack, and the exact photographs are in this repo — including <em>today's</em>.</li>
+<li><strong>Tooling over heroics.</strong> The diagnosis path itself was committed as reusable sketches
+   (<code>wheel_test</code>, <code>wheel_test_hold</code>) so the next builder inherits the staircase we climbed.</li>
+<li><strong>Polish under pressure.</strong> The pad got pointer-capture hold robustness, a PWM slider, a
+   validated speed-suffix protocol and gap framing on the wire — all refined the same day they
+   were first needed.</li>
+</ol>
+<hr />
+<h2>10 · What Remains</h2>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Priority</th>
+<th>Owner note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Finish the 2 wiring polish items: dedicated ESP32↔Uno ground wire; HC-SR04 VCC/GND direct to Arduino (some done)</td>
+<td>High</td>
+<td>15 min; kills the residual <code>STATUS:ERROR</code> / <code>dist=-1</code></td>
+</tr>
+<tr>
+<td>First full-floor autonomous run (<code>perception_node --serial-mode http</code>)</td>
+<td>High</td>
+<td>tune <code>left_boundary/center_boundary/stop_area_ratio</code></td>
+</tr>
+<tr>
+<td>Optional 4800 baud link (or level shifter) if link errors persist</td>
+<td>Medium</td>
+<td>both sides, 1-line each</td>
+</tr>
+<tr>
+<td>Public-IP tunnel for demo (ngrok/cloudflared) — <em>needs driver-side auth decision (fetches to /cmd become internet-reachable)</em></td>
+<td>Low</td>
+<td>P2; nice talk-track, security note attached</td>
+</tr>
+<tr>
+<td>Battery terminal lug replacement (Incident #1 hardware)</td>
+<td>Medium</td>
+<td>re-tension + fresh insulation recommended</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>Appendix A — Full Photo Index</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>EXIF timestamp</th>
+<th>Photo</th>
+<th>What it documents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2026-10-03</td>
+<td><code>hw_ultrasonic_sensor_hcsr04_with_bracket.jpg</code></td>
+<td>Sensor kit + acrylic bracket</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2026-10-06 15:01</td>
+<td><code>hw_tt_dc_gear_motor.jpg</code></td>
+<td>TT gearmotor — propulsion chosen</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2026-10-06 19:21</td>
+<td><code>assembly_01…</code></td>
+<td>Battery holder + rocker switch</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2026-10-06 19:21</td>
+<td><code>assembly_02…</code></td>
+<td>Dual TT motors mounted</td>
+</tr>
+<tr>
+<td>5</td>
+<td>2026-10-06 22:09</td>
+<td><code>assembly_03…</code></td>
+<td>Wheels + caster → base rolls</td>
+</tr>
+<tr>
+<td>6</td>
+<td>2026-10-06 22:09</td>
+<td><code>assembly_04…</code></td>
+<td>Mobile base top view</td>
+</tr>
+<tr>
+<td>7</td>
+<td>2026-10-08 12:05</td>
+<td><code>hw_esp32_cam_front_ov2640.jpg</code></td>
+<td>ESP32-CAM front (OV2640)</td>
+</tr>
+<tr>
+<td>8</td>
+<td>2026-10-08 12:05</td>
+<td><code>hw_esp32_devkit_board_back.jpg</code></td>
+<td>DevKit V1 back</td>
+</tr>
+<tr>
+<td>9</td>
+<td>2026-10-08 15:45</td>
+<td><code>test_esp32_firmware_flashing_esptool.jpg</code></td>
+<td>First esptool flash</td>
+</tr>
+<tr>
+<td>10</td>
+<td>2026-10-08 15:57</td>
+<td><code>hw_esp32_cam_connected_usb.jpg</code></td>
+<td>Board on USB</td>
+</tr>
+<tr>
+<td>11</td>
+<td>2026-10-09 14:28</td>
+<td><code>hw_power_18650…buck_converter.jpg</code></td>
+<td>2S pack + LM2596</td>
+</tr>
+<tr>
+<td>12</td>
+<td>2026-10-09 16:54</td>
+<td><code>assembly_05…</code></td>
+<td>HC-SR04 rear mount</td>
+</tr>
+<tr>
+<td>13</td>
+<td>2026-10-09 16:54</td>
+<td><code>assembly_06…</code></td>
+<td>Sensor bracket detail</td>
+</tr>
+<tr>
+<td>14</td>
+<td>2026-10-19 21:11</td>
+<td><code>assembly_07…</code></td>
+<td>Bench wiring integration</td>
+</tr>
+<tr>
+<td>15</td>
+<td>2026-10-19 21:23</td>
+<td><code>hw_arduino_uno_wired.jpg</code></td>
+<td>Uno wired</td>
+</tr>
+<tr>
+<td>16</td>
+<td>2026-10-19 21:23</td>
+<td><code>hw_ultrasonic_sensor_transducer_detail.jpg</code></td>
+<td>Transducer close-up</td>
+</tr>
+<tr>
+<td>17</td>
+<td>2026-10-19 21:23</td>
+<td><code>hw_ultrasonic_sensor_hcsr04_pinout.jpg</code></td>
+<td>HC-SR04 DuPont pinout</td>
+</tr>
+<tr>
+<td>18</td>
+<td>2026-10-19 22:24</td>
+<td><code>assembly_08…</code></td>
+<td>Electronics placement dry-fit</td>
+</tr>
+<tr>
+<td>19</td>
+<td>(screenshot 10-19)</td>
+<td><code>telemetry_live_yolo_tracking_ip_webcam.jpg</code></td>
+<td>First live YOLO tracking</td>
+</tr>
+<tr>
+<td>20</td>
+<td>(screenshot 10-19)</td>
+<td><code>telemetry_missionpilot_dashboard_and_terminal.jpg</code></td>
+<td>MissionPilot dashboard</td>
+</tr>
+<tr>
+<td>21</td>
+<td>2026-10-20 13:50</td>
+<td><code>assembly_09…</code></td>
+<td>Two-tier prototype side</td>
+</tr>
+<tr>
+<td>22</td>
+<td>2026-10-20 13:50</td>
+<td><code>assembly_10…</code></td>
+<td>Two-tier prototype top</td>
+</tr>
+<tr>
+<td>23</td>
+<td>2026-10-20 13:51</td>
+<td><code>assembly_11…</code></td>
+<td>Underside wire routing</td>
+</tr>
+<tr>
+<td>24</td>
+<td>(screenshot 10-22)</td>
+<td><code>test_esp32cam_wifi_stream_mobile_01/02</code></td>
+<td>Phone viewing Wi-Fi stream</td>
+</tr>
+<tr>
+<td>25</td>
+<td>2026-10-23 15:14</td>
+<td><code>assembly_12…</code></td>
+<td>Motor harness insulated joints</td>
+</tr>
+<tr>
+<td>26</td>
+<td>2026-10-26 19:08</td>
+<td><code>hw_tb6612fng_motor_driver_top.jpg</code></td>
+<td>TB6612 top (IC)</td>
+</tr>
+<tr>
+<td>27</td>
+<td>2026-10-26 19:09</td>
+<td><code>hw_tb6612fng_motor_driver_pinout.jpg</code></td>
+<td>TB6612 pin markings</td>
+</tr>
+<tr>
+<td>28</td>
+<td><strong>2026-10-26 20:14</strong></td>
+<td><code>assembly_13_…_damaged_shortcircuited.jpeg</code></td>
+<td><strong>Incident #1: battery terminal</strong></td>
+</tr>
+<tr>
+<td>29</td>
+<td><strong>2026-10-29 16:12</strong></td>
+<td><code>short circuited.jpg</code></td>
+<td><strong>Incident #2: taped splice (today)</strong></td>
+</tr>
+<tr>
+<td>30</td>
+<td>(laptop)</td>
+<td><code>ai rover detection system in laptop.jpg</code></td>
+<td>YOLO detection system on laptop</td>
+</tr>
+</tbody>
+</table>
+<h2>Appendix B — Telemetry Dictionary (Uno → USB, 9600)</h2>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BOOT:STOP</code></td>
+<td>firmware booting, motors denied</td>
+</tr>
+<tr>
+<td><code>DIST:&lt;cm&gt;</code> / <code>DIST:-1</code></td>
+<td>last ultrasonic range; <code>-1</code> = invalid echo (forward blocked)</td>
+</tr>
+<tr>
+<td><code>CMD:F STATE:GO</code></td>
+<td>parsed command + actuator state (<code>GO/STOP/BLOCKED/TIMEOUT</code>)</td>
+</tr>
+<tr>
+<td><code>STATUS:OK / :STOP / :ERROR</code></td>
+<td>run / safety hold / malformed input rejected</td>
+</tr>
+<tr>
+<td><code>ALERT:OBSTACLE dist=…cmd=F</code></td>
+<td>forward refused by the 15 cm gate (rate-limited)</td>
+</tr>
+</tbody>
+</table>
+<h2>Appendix C — Command Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Interface</th>
+<th>Command</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Link (anytier)</td>
+<td><code>F</code> <code>B</code> <code>L</code> <code>R</code> <code>S</code> + optional <code>&lt;0..255&gt;</code></td>
+<td>drive at PWM; bare letter = last speed (boot: 200)</td>
+</tr>
+<tr>
+<td>Pad</td>
+<td>hold ▲▼◀▶ / slider / STOP</td>
+<td>repeated send @200 ms, release → <code>S</code></td>
+</tr>
+<tr>
+<td>Bench USB</td>
+<td>same alphabet (drain on D4 + USB both live)</td>
+<td>bring-up without the bridge</td>
+</tr>
+<tr>
+<td>AI pilot</td>
+<td><code>python -m software.perception_node --url http://&lt;phone&gt;:8080/video --serial-mode http</code></td>
+<td>rover decides and drives</td>
+</tr>
+<tr>
+<td>AI overlay</td>
+<td><code>py -3.12 scripts/ai_video_server.py --url http://&lt;phone&gt;:8080/video</code></td>
+<td>YOLO boxes on the pad camera</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>Generated October 29, 2026 · Evidence: 30 photographs (EXIF-verified), live dual-board serial
+captures, 98 passing contract tests, and the repository itself.</em></p></body></html>

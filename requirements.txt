@@ -16,6 +16,12 @@ psutil>=5.9.0
 # Optional: faster / smaller detector alternative (installed, backend: yolo)
 ultralytics>=8.0.0
 
+# Optional: zero-shot explainability (software/ai/explainer.py).
+# clip drives the shipped TorchScript checkpoint weights/clip/ViT-B-32.pt;
+# open-clip-torch is the maintained alternative for open_clip-native weights.
+clip>=1.0
+open-clip-torch>=2.20.0
+
 # Optional: dashboard web UI
 flask>=3.0.0
 

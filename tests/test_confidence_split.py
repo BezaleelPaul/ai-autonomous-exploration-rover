@@ -5,6 +5,11 @@ decides *which detections we steer toward and drive forward on*. They used to be
 the same key, so lowering the detection bar to improve multi-object recall
 silently relaxed the forward-motion safety gate. These tests pin the split
 (REGRESSION_REPORT.md section 9).
+
+The detection bar is one of the dials ``scripts/autotune_detection.py`` may
+move, and ``load_config`` merges the learned overlay in, so the *shipped*
+value is asserted by reading ``config/config.yaml`` directly. The act-on bar
+is never auto-tuned, so ``load_config`` is fine for it.
 """
 
 from __future__ import annotations
@@ -12,6 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 
 from software.ai.detection import Detection
 from software.main import RoverApp
@@ -31,11 +37,13 @@ def _bottle(confidence: float) -> Detection:
     return Detection("bottle", confidence, 10.0, 10.0, 60.0, 80.0)
 
 
-def test_shipped_config_reports_more_objects_than_it_acts_on(cfg: dict) -> None:
-    ai = cfg["ai"]
-    assert ai["confidence_threshold"] == 0.25, "detection bar was lowered"
-    assert ai["target_confidence"] == 0.5, "act-on bar must stay at the old value"
-    assert ai["target_confidence"] > ai["confidence_threshold"]
+def test_shipped_config_reports_more_objects_than_it_acts_on() -> None:
+    shipped = yaml.safe_load(
+        (ROOT / "config" / "config.yaml").read_text(encoding="utf-8")
+    )["ai"]
+    assert shipped["confidence_threshold"] == 0.25, "detection bar was lowered"
+    assert shipped["target_confidence"] == 0.5, "act-on bar must stay put"
+    assert shipped["target_confidence"] > shipped["confidence_threshold"]
 
 
 def test_target_confidence_is_accepted_by_config_validation(cfg: dict) -> None:

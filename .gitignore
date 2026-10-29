@@ -15,3 +15,11 @@ kernel.errors.txt
 *.bak
 diagrams/wokwi/build/
 .DS_Store
+config/learned.yaml
+.pytest_cache/
+.ruff_cache/
+.playwright-mcp/
+*.safetensors
+reports/~$*.docx
+first five sheets (1).docx
+front sheet and certificate (1).docx

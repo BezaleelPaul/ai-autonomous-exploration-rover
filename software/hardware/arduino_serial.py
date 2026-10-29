@@ -25,12 +25,25 @@ BOARD_PORT_DENY = re.compile(
     r"intel\(r\) .*sol|bluetooth|communications port \(com\d+\)", re.I
 )
 
+# Arduino SA USB-VID (UNO/Nano/Mega). The ESP32 devkit's CP210x bridge is also
+# "board-like", so VID/manufacturer is what breaks the tie: commands belong to
+# the Arduino (it owns the whitelist and the safety gate), not the WiFi bridge.
+ARDUINO_USB_VID = 0x2341
+
+
+def _is_arduino(port) -> bool:
+    if getattr(port, "vid", None) == ARDUINO_USB_VID:
+        return True
+    blob = f"{port.description or ''} {getattr(port, 'manufacturer', None) or ''}"
+    return "arduino" in blob.lower()
+
 
 def detect_board_port() -> str | None:
-    """Best-effort: the single serial port that looks like the rover board.
+    """Best-effort: the serial port that looks like the rover's Arduino.
 
-    Returns None when nothing (or several ambiguous candidates) is found;
-    the caller then keeps whatever the config says.
+    Several board-like ports (an Arduino plus an ESP32 bridge) are common; the
+    Arduino wins so auto-detect never sends F/B/L/R/S to the WiFi bridge.
+    Returns None when nothing is found and the caller keeps the config value.
     """
     try:
         import serial.tools.list_ports as lp
@@ -46,6 +59,14 @@ def detect_board_port() -> str | None:
     if len(matches) == 1:
         return matches[0].device
     if len(matches) > 1:
+        arduino = [p for p in matches if _is_arduino(p)]
+        if arduino:
+            logger.warning(
+                "several board-like ports %s - using the Arduino %s",
+                [p.device for p in matches],
+                arduino[0].device,
+            )
+            return arduino[0].device
         logger.warning(
             "several board-like ports %s - set serial.port in config.yaml",
             [p.device for p in matches],

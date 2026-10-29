@@ -45,6 +45,7 @@ ESP32_FQBN = "esp32:esp32:esp32cam"
 SKETCHES = {
     "uno": (os.path.join("arduino", "rover_controller"), UNO_FQBN),
     "esp32": (os.path.join("esp32", "camera_stream"), ESP32_FQBN),
+    "wheels": (os.path.join("arduino", "wheel_test"), UNO_FQBN),
 }
 
 # Port descriptions that are definitely NOT a rover board.
@@ -640,7 +641,7 @@ def main(argv=None):
     sub.add_parser("ports", help="list serial ports and detect the board")
 
     f = sub.add_parser("flash", help="compile and upload firmware")
-    f.add_argument("--target", choices=("uno", "esp32"), default="uno")
+    f.add_argument("--target", choices=("uno", "esp32", "wheels"), default="uno")
     f.add_argument("--port", default=None)
     f.add_argument("--compile-only", action="store_true")
 

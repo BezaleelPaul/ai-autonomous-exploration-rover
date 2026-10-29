@@ -1,4 +1,4 @@
-"""Adversarial full-chain safety tests: DecisionEngine -> ObstacleAvoidance
+"""Adversarial full-chain safety tests: steering mapping -> ObstacleAvoidance
 -> SafetyManager -> ArduinoSerial.send, driven through RoverApp.step().
 
 Hardware is mocked; results are SIMULATED (they prove software behaviour only,
@@ -11,6 +11,7 @@ from __future__ import annotations
 import math
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 import numpy as np
@@ -271,6 +272,7 @@ def test_emergency_latch_engages_through_the_auto_chain():
         app.step()
     assert app.safety.emergency_latch is True, "latch must not release < slow_cm"
     app.serial.set_mock_distance(35.0)  # >= slow_cm => R4 release
+    time.sleep(0.25)  # let the anti-oscillation cooldown elapse deterministically
     for _ in range(10):
         app.step()
     assert app.safety.emergency_latch is False, "latch must release >= slow_cm"

@@ -1,0 +1,9 @@
+﻿<html><head><style>
+@page { size: A4; @bottom-center { content: "Page " counter(page) " of " counter(pages); } }
+.toc a::after { content: leader('.') target-counter(attr(href), page); }
+h1 { break-before: page; }
+</style></head><body>
+<p class="toc"><a href="#a">Chapter A</a></p>
+<h1 id="a">Chapter A</h1><p>Hello</p>
+<h1 id="b">Chapter B</h1><p>World</p>
+</body></html>

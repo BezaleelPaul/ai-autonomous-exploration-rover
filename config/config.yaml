@@ -12,16 +12,46 @@ camera:
   enhance_clahe: true
   enhance_sharpen: true
   enhance_denoise: false
+  enhance_fourier: true     # 2D Fourier Homomorphic High-Frequency Emphasis (HFE)
+  ground_plane:
+    height_m: 0.0       # camera height above the floor, metres; 0 = disabled
+                        # (calibrate by measuring lens-to-floor). When set, a
+                        # pinhole floor-hit fallback gives a metric distance
+                        # for floor-standing objects even before the
+                        # ultrasonic depth calibration is ready.
+    focal_px: 600.0     # focal length in pixels (640-wide frame); rough
+                        # default ~ phone camera hFOV ~55 deg
+    pitch_deg: 0.0      # camera pitch relative to horizontal (positive =
+                        # looking down)
 
 ai:
   model_name: "facebook/detr-resnet-50"
   model_dir: "models/detr-resnet-50"
-  yolo_model: "yolo11n.pt"  # Lightweight baseline: 2.6M params, <150 ms @320 CPU
-  tracker: "default"        # default real-time tracker; supports "botsort.yaml" when GPU is enabled
-  #   Measured low-power fallback (reports/MODEL_BENCHMARK.md, 2026-09-26):
-  #   yolo26n.pt — 2.57 M params, p50 126 ms, 0.25 s refresh even at 100 %
-  #   CPU load, but recall 0.3541 vs 0.4769 (-12.3 pts) and F1 0.4962 vs
-  #   0.6011. Swap only if the H4 realtime gate cannot otherwise be met.
+  yolo_model: "yolov8m-worldv2.pt"  # Medium Open-Vocabulary Vision Transformer (27.8M params)
+  export: "openvino"        # inference engine: torch | onnx | openvino.
+                             # Resolves <stem>.onnx / <stem>_openvino_model and
+                             # falls back to the .pt if the artifact is absent
+                             # (software/ai/detector.py resolve_model_path).
+                             # OpenVINO iGPU (HD 620) measured via ultralytics
+                             # track @320 static: p50 66.9 ms = 14.9 FPS, 2.2x
+                             # faster than ONNX@416 (reports/INFER_BENCH.md).
+                             # MUST stay static (dynamic=True -> 172 ms: shader
+                             # recompile poisons the iGPU) and MUST stay @320
+                             # (@416 -> 181 ms: HD 620 chokes on the big tensor).
+  openvino_device: "intel:gpu"  # OpenVINO device for the openvino engine:
+                             # intel:gpu (iGPU, fast) | intel:cpu. Auto-falls
+                             # back to intel:cpu when no iGPU is present
+                             # (software/ai/detector.py _resolve_ov_device).
+  vlm_enabled: false         # BLIP caption-on-demand (ai/explainer.py); first
+                             # use downloads ~1 GB of BLIP weights
+  tracker: "tracktrack.yaml"  # multi-object tracker: tracktrack.yaml | botsort.yaml | bytetrack.yaml | fasttrack.yaml | ocsort.yaml
+  sahi_enabled: false        # SAHI (Slicing Aided Hyper Inference) for small/far distant objects
+  sahi_slice_size: 320       # tile dimensions for sliced multi-scale inference
+  sahi_overlap: 0.20         # overlap ratio between adjacent tiles
+  #   Accuracy caveat (reports/MODEL_BENCHMARK.md, 2026-09-26): yolo26n recall
+  #   0.3541 vs yolo11s 0.4769 (-12.3 pts), F1 0.4962 vs 0.6011 — it is the
+  #   realtime/low-power pick, NOT the accuracy pick: yolo11s stays the
+  #   accuracy reference and yolo11n is dominated at equal speed.
   # Words the world-model looks for (COCO has no "pen" — this list fixes that).
   # Full vocabulary: all 80 COCO classes + common extras (pen/watch/keys/...).
   # Singular nouns only — CLIP matches those best.
@@ -41,15 +71,14 @@ ai:
                    "scissors", "teddy bear", "hair drier", "toothbrush",
                    "pen", "pencil", "marker", "watch", "keys", "wallet", "glasses",
                    "earbuds", "charger", "stapler", "ruler", "eraser"]
-  yolo_imgsz: 320            # realtime budget, not accuracy: at ~100% host CPU
-                             # load 320 measures p50 334-685 ms (0.67-1.37 s
-                             # refresh), 384 -> 0.87 s, 416 -> 1.02 s and
-                             # 480 -> 1.15 s, i.e. 416+ BREAK the 1.0 s
-                             # target-lock (red-team H4) on a loaded machine
-                             # and 320 itself is green only at <=~60 % load
-                             # (p50 184 ms @50 % -> 0.37 s refresh). Accuracy
-                             # comes from the thresholds below instead (see
-                             # scripts/eval_detection.py).
+  yolo_imgsz: 320            # input resolution; MUST match the OpenVINO export
+                             # (static 320, see export: above). ONNX numbers for
+                             # reference (idle i5-7300U, reports/INFER_BENCH.md
+                             # 2026-10-18): 320 -> 92 ms, 416 -> 145 ms. On the
+                             # iGPU, 320 (67 ms) beats 416 (181 ms) 2.7x —
+                             # small-object recall is traded for realtime; raise
+                             # confidence_threshold's companion imgsz only when
+                             # re-exporting a larger static model.
   yolo_track: true           # ByteTrack IDs keep labels glued to objects
   min_box_px: 8              # drop tiny-box false positives (yolo backend);
                              # 20 px silently discarded small objects (eval)
@@ -81,6 +110,85 @@ ai:
   inference_interval: 2  # run inference every N frames (perf tuning, see scripts/benchmark.py)
   backend: "yolo"        # yolo (realtime default) | hf | color | mock
 
+explorer:
+  enabled: false           # Gemini narration of the journey (advisory only).
+                           # Needs GEMINI_API_KEY in the environment — the key
+                           # is NEVER read from config and never written to
+                           # disk. Measured on this host: one narrated entry
+                           # costs 6.9 s, so this can never sit in the control
+                           # loop (H4 needs 0.50 s). Fail-soft: no key or a
+                           # dead network leaves the deck untouched.
+  interval_s: 60.0         # minimum seconds between narrated entries, and the
+                           # entries only fire when something actually changed
+                           # (new object class / path verdict / mode / target)
+  model: "gemini-2.5-flash"
+  max_tokens: 700          # cap per entry (~55-100 words of prose)
+  journal_dir: "data/journal"  # one subdir per power-on session
+
+plugins:
+  enabled: ["scenesense"]
+                         # vision enhancers loaded by software/plugins (see
+                         # software/plugins/__init__.py).
+                         # One detector pass only: the COCO control model runs
+                         # per frame. Add "world" (YOLO-World open-vocab second
+                         # pass: pen/watch/keys/... that COCO-80 misses, with
+                         # IoU>=0.5 duplicates dropped) only when the extra CPU
+                         # is affordable — on the 2-core host it duplicates the
+                         # per-frame detection and starves the realtime loop.
+                         # "scenesense" = surroundings understanding: monocular
+                         # depth + world model (near/far, motion, ON relations,
+                         # path blocked) -> feed.world on the deck.
+  world_every_n: 2       # cost dial: 1 = every worker pass, 2 = every other
+                         # (~half the extra CPU), 3+ = rarer refresh of labels
+  world_conf: 0.25       # world-model confidence floor (same as control model)
+  scenesense_every_n: 1   # depth+world-model refresh cadence (1 = every pass;
+                         # the worker thread's slow_interval_s sets the rate)
+  world_deadline_s: 12.0  # watchdog: world older than this -> DEGRADED on deck
+                         # (fail-loud instead of silently treating a stale
+                         # fact stream as current). Sized for the CPU-only
+                         # host, where one depth+world pass takes ~5-9 s.
+  slow_interval_s: 2.0   # plugin worker breather between passes so the slow
+                         # plugins can't peg the CPU and starve the detector
+  world_k_sigma: 2.0     # distance intervals are estimate ± k·sigma (sigma =
+                         # ultrasonic-calibration residual + KF uncertainty)
+  world_clear_m: 0.5     # STL spec margin: always (ultrasonic > world_clear_m);
+                         # robustness rho reported live on the deck
+  world_spec_window_s: 2.0  # STL evaluation window (seconds)
+  scenesense_metric_depth: false  # false = relative depth + ultrasonic fit
+                         # (inverse-depth calibrator, needs 4+ pairs). true =
+                         # Depth-Anything-V2 Metric checkpoint: depth map is
+                         # already metres, calibrator is skipped, world facts
+                         # report d=x±y m immediately (~100 MB HF download on
+                         # first frame).
+  scenesense_depth_model: ""  # HF checkpoint override; empty = mode default
+                         # (relative .../Depth-Anything-V2-Small-hf, or the
+                         # metric .../Metric-Indoor-Small-hf when
+                         # scenesense_metric_depth: true)
+
+# Auto-tune (software/autotune): measure -> explore -> commit -> monitor ->
+# re-arm. A dial is searched over a small bounded set, the cheapest value that
+# satisfies its constraint is committed, and the committed value is then
+# watched: a cost that degrades (or improves) past its re-arm band throws the
+# dial back to exploration, so the system re-finds its optimum on its own and
+# stabilises there. Nothing in here can touch safety, serial, navigation or
+# rover geometry — the tuner only reads dials this file declares.
+autotune:
+  enabled: true           # master switch: false = shipped values, forever
+  learned_path: "config/learned.yaml"  # remembered operating point, merged in
+                          # by load_config as file < learned < environment;
+                          # "" disables persistence entirely. Git-ignored: it
+                          # is a runtime artifact, regenerated by the calibrator.
+  window_s: 2.0           # how long one candidate is measured before it is
+                          # judged (s); longer = less noise, slower convergence
+  budget_margin: 0.25     # detection-refresh budget = this x
+                          # navigation.target_lock_duration_s. 0.25 x 2.0 s =
+                          # 0.5 s, the "~0.5 s refresh" target in README section
+                          # 5; the tuner keeps refresh at or under that.
+  max_interval: 8         # ceiling of the ai.inference_interval search (1..8)
+  rearm_ratio: 1.5        # committed cost worse than 1.5x -> explore again
+  improve_ratio: 0.5      # committed cost better than 0.5x -> explore again
+                          # (both are what "stabilise unless the world changed")
+
 rover:
   width_cm: 18.0
   length_cm: 22.0
@@ -93,6 +201,17 @@ rover:
   search_rotation_duration_s: 10.0  # 30s search_timeout / 10s => 3 rotations >= max_search_rotations=2
   approach_stop_width_ratio: 0.45  # if bbox width > 45% frame => VERY CLOSE => stop
   max_speed_pwm: 200
+
+# Explore mode (deck "EXPLORE" button / dashboard.pilot MODES): roam loop
+# drive -> ultrasonic/world blocked -> scan dwell -> pivot ~90 deg (alternating
+# L/R) -> repeat until the time or turn budget runs out. SafetyManager stays
+# tier-1: every proposed command still passes the shared safety gate.
+explore:
+  blocked_cm: 40.0  # stop driving below this ultrasonic distance (cm)
+  scan_s: 1.5  # dwell at each stop so scenesense/CLIP refresh world facts (s)
+  turn_s: 0.6  # in-place pivot duration per heading change (s)
+  max_duration_s: 180.0  # auto-stop after this long (Mars-sol style budget, s)
+  max_turns: 8  # or after this many blocked-turns (whichever comes first)
 
 # Phase 9+ closed-loop drive foundation (docs/future-work/30_FUTURE_WORK.md).
 # Gains feed software/control/pid.py; geometry feeds software/control/odometry.py.
@@ -136,10 +255,39 @@ safety:
   require_camera_for_auto: true
   require_serial_for_auto: true
 
+# Two-tier stack (software/perception_node + esp32/bt_bridge + arduino/motion_safety):
+# phone IP Webcam -> YOLOv8n target lock -> single-char F/L/R/S over a USB or
+# Bluetooth virtual COM port. Independent of the ESP32-CAM loop above: nothing
+# in the original stack reads this section, and this node never reads theirs.
+perception:
+  stream_url: "http://192.168.1.10:8080/video"  # IP Webcam app: http://<PHONE_IP>:8080/video
+  model: "yolov8m-worldv2.pt"  # Medium Open-Vocabulary Vision Transformer
+  target_class: "person"
+  confidence_threshold: 0.4
+  imgsz: 320                   # realtime budget on CPU (see reports/MODEL_BENCHMARK.md)
+  inference_interval: 2        # infer every Nth frame; HUD keeps the last detections
+  left_boundary: 0.33          # |<- LEFT ->| CENTER |<- RIGHT ->|
+  center_boundary: 0.66
+  stop_area_ratio: 0.35        # bbox area / frame area at or above this = too close -> 'S'
+  serial_mode: "auto"          # auto | usb | bluetooth | http  (http = ESP32 WiFi bridge)
+  serial_port: ""              # explicit port, e.g. COM5 for a BT adapter; empty = auto-detect
+  rover_url: "http://192.168.4.1"  # ESP32 soft-AP base URL for serial_mode: http
+  baud_rate: 9600
+  heartbeat_interval_s: 0.4    # resend the active command; must beat the Uno's
+                               # 500 ms link watchdog (motion_safety.ino), and
+                               # also stays < safety.comm_timeout_s (3 s)
+  command_cooldown_s: 0.2      # minimum spacing between distinct commands
+  hud_enabled: true
+  window_name: "AI Rover - Perception Node"
+
 dashboard:
   enabled: false
   host: "127.0.0.1"
   port: 5000
+  mode: "manual"             # manual | auto | observe — MissionPilot start mode
+  decision_history: 60       # why-chain ring buffer length for /api/decision
+  record_dir: "data/runs"    # run captures land in <record_dir>/<ISO timestamp>/
+  record_every_s: 1.0        # min gap between periodic annotated frames
 
 logging:
   level: "INFO"

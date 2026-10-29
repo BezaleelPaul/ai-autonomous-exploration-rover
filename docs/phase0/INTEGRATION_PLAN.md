@@ -108,7 +108,7 @@ phases onto the existing code so we fix/verify instead of rewrite.
 - **Gate:** TEST 10 (target lost → stop/search, no oscillation). Commit `07-target-tracking`.
 
 ### Phase 7 — BEHAVIOR CONTROLLER (P1)
-- `DecisionEngine` FSM exists (IDLE/SEARCHING/ALIGNING/APPROACHING/…); reconcile its state names with MASTER PROMPT §8 list, add `COMMUNICATION_LOST`/`OBSTACLE_STOP` explicit states if not represented (safety reasons exist — surface them as states).
+- `steering layer` FSM exists (IDLE/SEARCHING/ALIGNING/APPROACHING/…); reconcile its state names with MASTER PROMPT §8 list, add `COMMUNICATION_LOST`/`OBSTACLE_STOP` explicit states if not represented (safety reasons exist — surface them as states).
 - Keep perception ⊥ behavior (already separated).
 - **Gate:** mock scenario suite extended for new states still passes. Commit `08-autonomous-steering` (includes Phase 8).
 

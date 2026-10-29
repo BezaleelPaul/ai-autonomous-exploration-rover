@@ -34,7 +34,7 @@ Below is the verified comparative analysis contrasting workstation-level prototy
 
 1. **Academic Honesty in Reporting:**
    - The final report must clearly state that the **initial prototyping and scenario validation suite** used the Laptop-in-the-loop harness with HuggingFace DETR and YOLO-World to verify closed-loop navigation FSM logic.
-   - For complete edge autonomy without the laptop, the software architecture is designed to swap the `BaseDetector` interface to **Edge Impulse FOMO** or **Color-Blob Centroid Tracking** without modifying the downstream `DecisionEngine` or Arduino safety supervisor.
+   - For complete edge autonomy without the laptop, the software architecture is designed to swap the `BaseDetector` interface to **Edge Impulse FOMO** or **Color-Blob Centroid Tracking** without modifying the downstream `steering layer` or Arduino safety supervisor.
 
 2. **Frame Resolution & Skipping Strategy:**
    - On the ESP32, image capture at **VGA (640x480)** is compressed in hardware to JPEG.

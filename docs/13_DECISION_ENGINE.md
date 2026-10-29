@@ -14,3 +14,21 @@ $$\frac{w_{bbox}}{W_{frame}} \ge 0.45$$
 the rover infers that it has successfully arrived at the target ($~20$ cm standoff) and transitions to `STOPPED`.
 
 ![Decision Pipeline](../figures/06_decision_pipeline.png)
+
+## 2. Implementation
+
+The decision logic lives in the canonical control layer, not in a bespoke
+engine module:
+
+- **Zone -> command mapping** - `software/perception_node/zones.py`
+  (`classify_zone`, `command_for_zone`) is the single source of truth, shared by
+  the headless path and the Mission Deck's `SteeringPolicy`.
+- **Position -> command + state** - `software/control/steering.py`
+  (`command_for_position`).
+- **Anti-oscillation** - `software/control/steering.py` (`AntiOscillation`);
+  STOP is never delayed.
+- **P-steering turn PWM** - `software/control/steering.py` (`p_steer_speed`),
+  Protocol v2.
+- **Finite search rotation** - `software/control/steering.py`
+  (`SearchRotation`), timeout + capped rotations so it always terminates.
+

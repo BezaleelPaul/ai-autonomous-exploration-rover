@@ -26,6 +26,7 @@ def enhance_for_inference(
     sharpen: bool = True,
     denoise: bool = False,
     clip_limit: float = 2.0,
+    fourier: bool = False,
 ) -> np.ndarray:
     try:
         import cv2
@@ -33,6 +34,10 @@ def enhance_for_inference(
         return frame
     try:
         out = gray_world_balance(frame)
+        if fourier:
+            from software.camera.fourier_enhancer import fourier_enhance_frame
+
+            out = fourier_enhance_frame(out)
         if clahe:
             lab = cv2.cvtColor(out, cv2.COLOR_BGR2LAB)
             lightness, a, b = cv2.split(lab)

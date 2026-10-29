@@ -42,7 +42,8 @@ The repository currently contains a complete, working, unit-tested **proof-of-co
 | `software/hardware/` | `esp32_stream.py` | MJPEG video stream decoder with watchdog | Existing | High | Local frame capture on ESP32 bus | Wi-Fi network latency overhead |
 | `software/hardware/` | `frame_manager.py` | Multi-threaded image acquisition & enhancement (CLAHE) | Existing | High | On-chip ESP32 ISP equivalent | High memory footprint on PC |
 | `software/perception/` | `detector.py`, `object_tracker.py`, `position_estimator.py`, `scene_analyzer.py` | Vision pipeline (HuggingFace DETR, Color blob, ByteTrack) | Existing | High (algorithmic reference) | Quantized TFLite Micro / ESP-DL model | DETR takes ~5.1s per frame on PC CPU; cannot run on ESP32 |
-| `software/navigation/` | `decision_engine.py`, `gap_assessment.py`, `obstacle_avoidance.py`, `target_search.py` | Navigation state machine and steering commands | Existing | High (logic easily ported to C++/ESP32) | Continuous proportional control (currently discrete F/L/R/S) | Discrete commands cause oscillatory motion |
+| `software/navigation/` | `gap_assessment.py`, `obstacle_avoidance.py` | Gap feasibility assessment and obstacle override | Existing | High (logic easily ported to C++/ESP32) | Continuous proportional control (currently discrete F/L/R/S) | Discrete commands cause oscillatory motion |
+| `software/control/` | `steering.py` | Canonical steering: position->command mapping (shared with the Mission Deck), anti-oscillation, P-steering PWM, finite search rotation | Existing | High (logic easily ported to C++/ESP32) | Continuous proportional control | Discrete commands cause oscillatory motion |
 | `software/safety/` | `safety_manager.py`, `failsafe.py` | Multi-tier command validation and priority latching | Existing | High | Hardware interlock | Purely software-gated |
 | `software/telemetry/` | `event_logger.py` | Telemetry logger to CSV and console | Existing | High | Flash/SD logging on rover | Writes to PC filesystem |
 | `software/telemetry/` | `event_eval.py` | Dataset eval harness: telemetry parsing/validation, run segmentation, statistics, 10 safety/protocol invariants | Existing | High (analysing onboard logs) | Read-only analysis of PC-side logs | Reads `logs/events.csv`; proves nothing physical |
@@ -61,7 +62,7 @@ The repository currently contains a complete, working, unit-tested **proof-of-co
 
 ## 3. Reusable Components for the Target System
 
-1. **State Machine Logic (`decision_engine.py`):**
+1. **State Machine Logic (`software/control/steering.py`):**
    - States: `IDLE`, `MANUAL`, `OBSERVE`, `SEARCHING`, `ALIGNING`, `APPROACHING`, `AVOIDING`, `STOPPED`, `EMERGENCY_STOP`, `ERROR`.
    - Clear transition rules based on normalized bounding box coordinates ($x_{center}$, $width_{ratio}$).
 2. **Safety Hierarchy (`safety_manager.py` & `rover_controller.ino`):**

@@ -240,11 +240,78 @@ class HFDetector(BaseDetector):
             return []
 
 
+def resolve_model_path(model: str, export: str = "torch") -> tuple[str, str]:
+    """Pick the artifact ``ai.export`` asks for, falling back to the .pt weights.
+
+    Returns ``(path, engine)``. ``export`` is ``torch`` (default), ``onnx`` or
+    ``openvino``; a missing export artifact is never an error - we load the
+    original ``.pt`` and report ``torch`` so tests and offline machines behave
+    exactly as before.
+    """
+    from pathlib import Path
+
+    engine = (export or "torch").strip().lower()
+    if engine not in ("torch", "onnx", "openvino"):
+        engine = "torch"
+    if engine != "torch":
+        stem = Path(model).with_suffix("")
+        if engine == "onnx":
+            onnx_path = Path(f"{stem}.onnx")
+            if onnx_path.is_file():
+                return str(onnx_path), "onnx"
+        else:
+            ov_dir = Path(f"{stem}_openvino_model")
+            if ov_dir.is_dir() and any(ov_dir.glob("*.xml")):
+                return str(ov_dir), "openvino"
+        warnings.warn(
+            f"ai.export={engine} but no export artifact for {model}; using .pt",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+    return model, "torch"
+
+
+def box_iou(b1: tuple[float, float, float, float], b2: tuple[float, float, float, float]) -> float:
+    """Intersection over Union for (x1, y1, x2, y2)."""
+    xx1 = max(b1[0], b2[0])
+    yy1 = max(b1[1], b2[1])
+    xx2 = min(b1[2], b2[2])
+    yy2 = min(b1[3], b2[3])
+    w = max(0.0, xx2 - xx1)
+    h = max(0.0, yy2 - yy1)
+    inter = w * h
+    area1 = max(0.0, b1[2] - b1[0]) * max(0.0, b1[3] - b1[1])
+    area2 = max(0.0, b2[2] - b2[0]) * max(0.0, b2[3] - b2[1])
+    union = area1 + area2 - inter
+    return inter / union if union > 0 else 0.0
+
+
+def nms_detections(dets: list[Detection], iou_thresh: float = 0.5) -> list[Detection]:
+    """Class-aware Non-Maximum Suppression over a list of Detection objects."""
+    if not dets:
+        return []
+    sorted_dets = sorted(dets, key=lambda d: d.confidence, reverse=True)
+    kept: list[Detection] = []
+    for d in sorted_dets:
+        box_d = (d.x1, d.y1, d.x2, d.y2)
+        suppress = False
+        for k in kept:
+            if d.class_name.lower() == k.class_name.lower():
+                box_k = (k.x1, k.y1, k.x2, k.y2)
+                if box_iou(box_d, box_k) > iou_thresh:
+                    suppress = True
+                    break
+        if not suppress:
+            kept.append(d)
+    return kept
+
+
 class YoloDetector(BaseDetector):
-    """Ultralytics YOLO backend (default yolo11s.pt): accurate + ByteTrack IDs
-    so labels stick to objects between inferences. Same Detection output
-    (+track_id); swap via config ai.backend=yolo / ai.yolo_model.
-    Auto-downloads weights once."""
+    """Ultralytics YOLO backend: multi-object detection and tracking.
+    
+    Supports TrackTrack, BoT-SORT, ByteTrack, OC-SORT, Deep OC-SORT, FastTracker,
+    plus SAHI (Slicing Aided Hyper Inference) for small/far distant object detection.
+    """
 
     def __init__(
         self,
@@ -257,6 +324,11 @@ class YoloDetector(BaseDetector):
         custom_classes: list[str] | None = None,
         iou_threshold: float = 0.7,
         tracker: str = "botsort.yaml",
+        export: str = "torch",
+        openvino_device: str = "",
+        sahi_enabled: bool = False,
+        sahi_slice_size: int = 320,
+        sahi_overlap: float = 0.20,
     ):
         self.model_name = model
         self.confidence_threshold = confidence_threshold
@@ -265,17 +337,45 @@ class YoloDetector(BaseDetector):
         self.imgsz = imgsz
         self.use_track = track
         self.iou_threshold = iou_threshold
-        self.tracker = tracker
+        self.tracker = self._normalize_tracker(tracker)
+        self.export = export
+        self.openvino_device = (openvino_device or "").strip().lower()
+        self.sahi_enabled = sahi_enabled
+        self.sahi_slice_size = max(128, int(sahi_slice_size))
+        self.sahi_overlap = max(0.0, min(0.5, float(sahi_overlap)))
+        self.engine = "torch"
         # Open-vocabulary words (only used by *-world.pt models, e.g. "pen").
         self.custom_classes = [c for c in (custom_classes or []) if c]
         self._model = None
         self._load_error: str | None = None
+        self._track_unavailable = False
+
+    @staticmethod
+    def _normalize_tracker(tracker: str | None) -> str:
+        if not tracker:
+            return "botsort.yaml"
+        t = tracker.strip().lower()
+        if t in ("default", "bytetrack"):
+            return "bytetrack.yaml"
+        if not t.endswith(".yaml") and not t.endswith(".yml"):
+            return f"{t}.yaml"
+        return t
 
     def load(self) -> bool:
         try:
+            # On a 2-core laptop ONNX Runtime otherwise saturates every logical
+            # CPU during each pass and the video decoder starves (visible lag).
+            # Respect an explicit user choice; override with OMP_NUM_THREADS.
+            import os
+
+            os.environ.setdefault("OMP_NUM_THREADS", "2")
             from ultralytics import YOLO
 
-            self._model = YOLO(self.model_name)
+            path, engine = resolve_model_path(self.model_name, self.export)
+            self._model = YOLO(path)
+            self.engine = engine
+            if engine == "openvino":
+                self.openvino_device = self._resolve_ov_device()
             if "world" in self.model_name.lower() and self.custom_classes:
                 self._model.set_classes(self.custom_classes)
             return True
@@ -283,8 +383,160 @@ class YoloDetector(BaseDetector):
             self._load_error = str(e)
             return False
 
+    def _resolve_ov_device(self) -> str:
+        """Validate the requested OpenVINO device; fall back to CPU when absent.
+
+        Accepts ``intel:gpu``/``gpu``/``GPU`` etc. Returns the normalized
+        ultralytics device string (``intel:gpu`` or ``intel:cpu``). A missing
+        iGPU is never fatal - we degrade to CPU rather than refuse to load.
+        """
+        wanted = (self.openvino_device or "intel:cpu").lower()
+        if wanted in ("gpu", "intel:gpu"):
+            wanted = "intel:gpu"
+        elif wanted in ("cpu", "intel:cpu"):
+            wanted = "intel:cpu"
+        if wanted == "intel:gpu":
+            try:
+                import openvino as ov
+
+                # GPU shows up as "GPU" (or "GPU.0") in available_devices.
+                if not any(
+                    d.upper().startswith("GPU") for d in ov.Core().available_devices
+                ):
+                    return "intel:cpu"
+            except Exception:
+                return "intel:cpu"
+        return wanted
+
+    def _device_kwargs(self) -> dict:
+        """predict/track kwargs pinning the OpenVINO device (empty for torch/onnx)."""
+        if self.engine == "openvino" and self.openvino_device:
+            return {"device": self.openvino_device}
+        return {}
+
     def is_ready(self) -> bool:
         return self._model is not None
+
+    def _predict(self, frame: np.ndarray, imgsz: int | None = None):
+        """Plain inference pass (no tracker), shared by both branches."""
+        sz = imgsz or self.imgsz
+        return self._model.predict(
+            frame,
+            conf=self.confidence_threshold,
+            iou=self.iou_threshold,
+            imgsz=sz,
+            verbose=False,
+            **self._device_kwargs(),
+        )[0]
+
+    def _parse_boxes(
+        self,
+        res,
+        offset_x: float = 0.0,
+        offset_y: float = 0.0,
+    ) -> list[Detection]:
+        """Convert ultralytics result to list[Detection] with optional coordinate offset."""
+        out: list[Detection] = []
+        names = getattr(res, "names", {})
+        boxes = getattr(res, "boxes", None)
+        ids = (
+            boxes.id.cpu().tolist()
+            if boxes is not None and boxes.id is not None
+            else []
+        )
+        now = time.time()
+        for i, b in enumerate(boxes or []):
+            name = str(names[int(b.cls[0])]).lower()
+            if self.allowed and name not in self.allowed:
+                continue
+            x1, y1, x2, y2 = [float(v) for v in b.xyxy[0].tolist()]
+            if (x2 - x1) < self.min_box_px or (y2 - y1) < self.min_box_px:
+                continue  # tiny-box false positives
+            tid = int(ids[i]) if i < len(ids) else None
+            out.append(
+                Detection(
+                    name,
+                    float(b.conf[0]),
+                    x1 + offset_x,
+                    y1 + offset_y,
+                    x2 + offset_x,
+                    y2 + offset_y,
+                    now,
+                    tid,
+                )
+            )
+        return out
+
+    def _detect_sliced(self, frame: np.ndarray) -> list[Detection]:
+        """SAHI Sliced Inference: combines global scene pass with local tiles for far/small objects."""
+        h, w = frame.shape[:2]
+        # 1. Global pass (carries main tracker state if active)
+        global_dets = self._detect_standard(frame)
+
+        # If image is smaller or equal to slice size, slicing is redundant
+        if w <= self.sahi_slice_size and h <= self.sahi_slice_size:
+            return global_dets
+
+        # 2. Sliced passes: tile across image with overlap
+        slice_w = min(w, self.sahi_slice_size)
+        slice_h = min(h, self.sahi_slice_size)
+        step_x = max(1, int(slice_w * (1.0 - self.sahi_overlap)))
+        step_y = max(1, int(slice_h * (1.0 - self.sahi_overlap)))
+
+        tile_dets: list[Detection] = []
+        for y in range(0, h, step_y):
+            for x in range(0, w, step_x):
+                y_end = min(h, y + slice_h)
+                x_end = min(w, x + slice_w)
+                y_start = max(0, y_end - slice_h)
+                x_start = max(0, x_end - slice_w)
+
+                crop = frame[y_start:y_end, x_start:x_end]
+                # Slices use plain prediction to avoid disrupting global tracker GMC/optical flow
+                crop_res = self._predict(crop, imgsz=self.sahi_slice_size)
+                crop_boxes = self._parse_boxes(
+                    crop_res, offset_x=float(x_start), offset_y=float(y_start)
+                )
+                tile_dets.extend(crop_boxes)
+
+        # 3. Fuse global and tile detections using Non-Maximum Suppression
+        all_dets = list(global_dets) + tile_dets
+        fused = nms_detections(all_dets, iou_thresh=self.iou_threshold)
+
+        # Transfer track IDs from global detections to fused detections when boxes overlap
+        for fd in fused:
+            if fd.track_id is None:
+                for gd in global_dets:
+                    if gd.track_id is not None and gd.class_name == fd.class_name:
+                        if box_iou((fd.x1, fd.y1, fd.x2, fd.y2), (gd.x1, gd.y1, gd.x2, gd.y2)) > 0.4:
+                            fd.track_id = gd.track_id
+                            break
+
+        return sorted(fused, key=lambda d: d.confidence, reverse=True)
+
+    def _detect_standard(self, frame: np.ndarray) -> list[Detection]:
+        """Standard full-frame detection / tracking pass."""
+        if self.use_track and not self._track_unavailable:
+            track_kwargs = {
+                "conf": self.confidence_threshold,
+                "iou": self.iou_threshold,
+                "imgsz": self.imgsz,
+                "verbose": False,
+                "persist": True,
+                **self._device_kwargs(),
+            }
+            if self.tracker:
+                track_kwargs["tracker"] = self.tracker
+            try:
+                res = self._model.track(frame, **track_kwargs)[0]
+            except Exception:
+                # Track failure fallback: degrade to plain predict for this frame
+                res = self._predict(frame)
+        else:
+            res = self._predict(frame)
+
+        boxes = self._parse_boxes(res)
+        return sorted(boxes, key=lambda d: d.confidence, reverse=True)
 
     def detect(self, frame: np.ndarray | None) -> list[Detection]:
         if frame is None:
@@ -292,45 +544,9 @@ class YoloDetector(BaseDetector):
         if self._model is None and not self.load():
             return []
         try:
-            if self.use_track:
-                track_kwargs = {
-                    "conf": self.confidence_threshold,
-                    "iou": self.iou_threshold,
-                    "imgsz": self.imgsz,
-                    "verbose": False,
-                    "persist": True,
-                }
-                if self.tracker and self.tracker not in ("default", "bytetrack"):
-                    track_kwargs["tracker"] = self.tracker
-                res = self._model.track(frame, **track_kwargs)[0]
-            else:
-                res = self._model.predict(
-                    frame,
-                    conf=self.confidence_threshold,
-                    iou=self.iou_threshold,
-                    imgsz=self.imgsz,
-                    verbose=False,
-                )[0]
-            out: list[Detection] = []
-            names = res.names
-            boxes = res.boxes
-            ids = (
-                boxes.id.cpu().tolist()
-                if boxes is not None and boxes.id is not None
-                else []
-            )
-            for i, b in enumerate(boxes or []):
-                name = str(names[int(b.cls[0])]).lower()
-                if self.allowed and name not in self.allowed:
-                    continue
-                x1, y1, x2, y2 = [float(v) for v in b.xyxy[0].tolist()]
-                if (x2 - x1) < self.min_box_px or (y2 - y1) < self.min_box_px:
-                    continue  # tiny-box false positives
-                tid = int(ids[i]) if i < len(ids) else None
-                out.append(
-                    Detection(name, float(b.conf[0]), x1, y1, x2, y2, time.time(), tid)
-                )
-            return sorted(out, key=lambda d: d.confidence, reverse=True)
+            if self.sahi_enabled:
+                return self._detect_sliced(frame)
+            return self._detect_standard(frame)
         except Exception:
             return []
 
@@ -357,6 +573,11 @@ def create_detector(cfg: dict) -> BaseDetector:
             ai.get("custom_classes", []),
             ai.get("iou_threshold", 0.7),
             tracker=ai.get("tracker", "botsort.yaml"),
+            export=ai.get("export", "torch"),
+            openvino_device=ai.get("openvino_device", ""),
+            sahi_enabled=bool(ai.get("sahi_enabled", False)),
+            sahi_slice_size=int(ai.get("sahi_slice_size", 320)),
+            sahi_overlap=float(ai.get("sahi_overlap", 0.20)),
         )
     if backend == "color":
         return ColorDetector()

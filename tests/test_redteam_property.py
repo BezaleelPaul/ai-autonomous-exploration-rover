@@ -14,8 +14,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from software.control.steering import AntiOscillation, command_for_position
 from software.hardware.arduino_serial import ArduinoSerial
-from software.navigation.decision_engine import DecisionEngine
 from software.perception.position_estimator import classify_position, is_centered
 from software.safety.safety_manager import SafetyManager
 
@@ -183,44 +183,39 @@ def test_raw_binary_fuzz_never_raises():
 # ------------------------------------------------------------- decision ------
 def test_random_engine_inputs_always_yield_valid_commands():
     rng = random.Random(SEED + 9)
-    e = DecisionEngine(
-        center_tolerance=0.06,
-        min_command_duration_s=0.4,
-        cooldown_s=0.2,
-    )
+    osc = AntiOscillation(min_command_duration_s=0.4, cooldown_s=0.2)
     now = 0.0
     for _ in range(3000):
         position = rng.choice(["LEFT", "CENTER", "RIGHT", "NONE", "JUNK"])
         very_close = rng.random() < 0.2
         target_present = rng.random() < 0.7
-        d = e.decide(position, very_close, target_present, now=now)
-        assert d.command in VALID_CMDS, d
+        command, _state = command_for_position(position, very_close, target_present)
+        issued = osc.apply(command, now)
+        assert issued in VALID_CMDS, issued
         now += 0.05
 
 
 def test_engine_stop_decision_is_not_delayed_by_the_oscillation_hold():
-    """A STOP chosen by the engine must be issued immediately (docs/19)."""
-    e = DecisionEngine(
-        center_tolerance=0.06, min_command_duration_s=0.4, cooldown_s=0.2
-    )
+    """A STOP chosen by the steering logic must be issued immediately (docs/19)."""
+    osc = AntiOscillation(min_command_duration_s=0.4, cooldown_s=0.2)
     now = 0.5
     violations = []
     for i in range(200):
-        drive = e.decide("CENTER", False, True, now=now)
-        assert drive.command == "F", f"setup failed at i={i}: {drive}"
-        lost = e.decide("CENTER", False, False, now=now + 0.01)
-        if lost.command != "S":
-            violations.append(("target lost", i, lost.command, lost.state))
+        drive = osc.apply(command_for_position("CENTER", False, True)[0], now)
+        assert drive == "F", f"setup failed at i={i}: {drive}"
+        lost = osc.apply(command_for_position("CENTER", False, False)[0], now + 0.01)
+        if lost != "S":
+            violations.append(("target lost", i, lost))
         now += 0.25
 
-        drive2 = e.decide("CENTER", False, True, now=now)
-        assert drive2.command == "F", f"setup failed at i={i}: {drive2}"
-        close = e.decide("CENTER", True, True, now=now + 0.01)
-        if close.command != "S":
-            violations.append(("approach stop", i, close.command, close.state))
+        drive2 = osc.apply(command_for_position("CENTER", False, True)[0], now)
+        assert drive2 == "F", f"setup failed at i={i}: {drive2}"
+        close = osc.apply(command_for_position("CENTER", True, True)[0], now + 0.01)
+        if close != "S":
+            violations.append(("approach stop", i, close))
         now += 0.25
     assert not violations, (
-        f"engine re-asserted a motion command immediately after deciding to stop "
+        f"steering re-asserted a motion command immediately after deciding to stop "
         f"in {len(violations)} of 400 cases, e.g. {violations[:3]}"
     )
 

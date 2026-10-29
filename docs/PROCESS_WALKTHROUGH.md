@@ -28,7 +28,7 @@ Every frame of video follows the same five-step loop, 5–10 times per second:
 2. **UNDERSTAND** — `software/ai/detector.py` runs the object detector and
    returns a bounding box; the box centre is compared with the frame centre to
    produce a heading error `e = x_target - x_center`.
-3. **DECIDE** — `software/navigation/decision_engine.py` turns the error into a
+3. **DECIDE** — `software/control/steering.py` turns the error into a
    zone (left / centre / right), and `software/safety/safety_manager.py` gets
    the **final veto**: camera stale, serial unhealthy, obstacle too close, or an
    invalid command all collapse to `S` (stop).

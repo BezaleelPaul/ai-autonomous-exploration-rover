@@ -1,0 +1,4778 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>AI_Rover_Project_Report</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<p><img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image1.png"
+style="width:2.05in;height:0.64472in" /></p>
+<p><strong>SCHOOL OF ENGINEERING AND TECHNOLOGY</strong></p>
+<p>CMR UNIVERSITY, BENGALURU</p>
+<p><em>A Project Report on</em></p>
+<blockquote>
+<p><strong>“AI-BASED VISION-GUIDED AUTONOMOUS ROVER WITH DISTRIBUTED
+EDGE INTELLIGENCE AND SAFETY CONTROL”</strong></p>
+</blockquote>
+<p>Submitted in partial fulfillment of the requirements for the award of
+the degree of</p>
+<p><strong>BACHELOR OF TECHNOLOGY</strong></p>
+<p>in</p>
+<p><strong>ELECTRONICS AND COMMUNICATION ENGINEERING</strong></p>
+<table style="width:97%;">
+<colgroup>
+<col style="width: 48%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>SUBMITTED BY</strong></p>
+<p><strong>KUNDURU NAGENDRA REDDY</strong></p>
+<p>(18BBTCS053)</p></th>
+<th><p><strong>GUIDED BY</strong></p>
+<p><strong>[Project Guide Name]</strong></p>
+<p>Assistant Professor, Dept. of ECE</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<p><strong>Department of Electronics and Communication
+Engineering</strong></p>
+<p>Off Hennur - Bagalur Main Road, Near Kempegowda International
+Airport, Chagalahatti, Bangalore, Karnataka - 562149</p>
+<p><strong>2026-2027</strong></p>
+<p><img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image1.png"
+style="width:1.55in;height:0.48747in" /></p>
+<p><strong>SCHOOL OF ENGINEERING AND TECHNOLOGY</strong></p>
+<p>Chagalahatti, Bengaluru, Karnataka - 562149</p>
+<p>Department of Electronics and Communication Engineering</p>
+<p><strong>CERTIFICATE</strong></p>
+<p>This is to certify that the project entitled “AI-BASED VISION-GUIDED
+AUTONOMOUS ROVER WITH DISTRIBUTED EDGE INTELLIGENCE AND SAFETY CONTROL”
+has been successfully carried out by KUNDURU NAGENDRA REDDY (18BBTCS053)
+in partial fulfillment of the requirements for the award of the degree
+of Bachelor of Technology in Electronics and Communication Engineering
+of CMR University, Bengaluru during the academic year 2026-2027. The
+project report has been approved as it satisfies the academic
+requirements in respect of project work prescribed for the said
+degree.</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">_ _ _ _ _ _ _ _ _ _ _ _</th>
+<th style="text-align: center;">_ _ _ _ _ _ _ _ _ _ _ _</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><p><strong>Signature of the Guide</strong></p>
+<p>[Project Guide Name]</p></td>
+<td><p><strong>Signature of the HOD</strong></p>
+<p>Dr. Raja Krishnamoorthi</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examiners Signature with date:</strong></p>
+<p>1. ______________________________________________</p>
+<p>2. ______________________________________________</p>
+<p>ACKNOWLEDGEMENT</p>
+<p>The completion of this project would not have been possible without
+the guidance, patience, and practical support of many people. I take
+this opportunity to record my sincere gratitude to all of them.</p>
+<p>I express my heartfelt thanks to Dr. Raja Krishnamoorthi, Professor
+and Head, Department of Electronics and Communication Engineering,
+School of Engineering and Technology, CMR University, Bengaluru, for his
+constant encouragement and for creating an environment in which hands-on
+engineering is valued. His emphasis on evidence, safety, and clear
+documentation shaped the way this project was executed.</p>
+<p>I am deeply grateful to [Project Guide Name], Assistant Professor,
+Department of Electronics and Communication Engineering, for the
+continuous technical guidance, constructive criticism, and patient
+review of every build stage. The suggestions on power isolation,
+watchdog design, and test discipline directly influenced the final
+architecture.</p>
+<p>I thank the laboratory technicians and staff of the School of
+Engineering and Technology for access to tools, measurement equipment,
+and workspace. I also thank my classmates and friends who helped hold
+components, check connections, and photograph the build at the end of
+long sessions. Their willingness to pause and document the work made
+this chronological report possible.</p>
+<p>Finally, I thank my family for their patience and encouragement
+during the weeks of assembly, debugging, and late-night testing. Any
+remaining errors or omissions in this report are my own.</p>
+<p><strong>KUNDURU NAGENDRA REDDY<br />
+18BBTCS053</strong></p>
+<p>DECLARATION</p>
+<p>I, KUNDURU NAGENDRA REDDY (18BBTCS053), a student of the Bachelor of
+Technology programme in Electronics and Communication Engineering,
+School of Engineering and Technology, CMR University, Bengaluru, hereby
+declare that the project work entitled “AI-BASED VISION-GUIDED
+AUTONOMOUS ROVER WITH DISTRIBUTED EDGE INTELLIGENCE AND SAFETY CONTROL”
+has been carried out by me under the guidance of [Project Guide Name],
+Assistant Professor, Department of Electronics and Communication
+Engineering. This report is submitted in partial fulfillment of the
+requirements for the award of the degree of Bachelor of Technology in
+Electronics and Communication Engineering by CMR University, Bengaluru,
+during the academic year 2026-2027.</p>
+<p>I further declare that the work presented in this report is original
+and that all sources of information, open-source libraries, datasets,
+and prior work have been acknowledged in the references. Photographs
+included in this report were taken by me or by my project associates
+during the build and are used here as primary documentary evidence.
+Measured values are reported as measured; design estimates and items
+still awaiting hardware validation are explicitly labelled as such.</p>
+<p>Place: Bengaluru</p>
+<p>Date: ____________________</p>
+<p><strong>KUNDURU NAGENDRA REDDY<br />
+18BBTCS053</strong></p>
+<p>ABSTRACT</p>
+<p>Small autonomous ground vehicles must see, decide, and stop safely
+within tight limits on power, memory, and cost. This report documents
+the design, assembly, software integration, testing, and recovery of a
+low-cost vision-guided differential-drive rover built around three
+cooperating units: an ESP32-CAM that streams Wi-Fi video, a laptop that
+runs YOLO-based detection and the decision engine, and an Arduino UNO
+that enforces hard real-time motor and obstacle safety. The physical
+platform uses a 2S 18650 battery pack, an LM2596 buck converter, a
+TB6612FNG dual H-bridge, two TT gear motors, and an HC-SR04 ultrasonic
+sensor.</p>
+<p>The report follows the build chronologically from the first component
+photographs on 3 October 2026 to the final power integration on 26
+October 2026. It records the mechanical assembly, the two-tier
+electronics stack, the wiring and power architecture, the firmware and
+host software, the control law, and the test campaign. It also documents
+a battery-terminal short-circuit incident that damaged a small number of
+components, the root-cause analysis that followed, and the corrective
+actions: insulated terminals, strain relief, an inline fuse, and an
+upgrade from the baseline L298N driver to a TB6612FNG MOSFET driver.</p>
+<p>Bench evidence includes 311 passing tests, clean static analysis,
+successful Arduino and ESP32 firmware builds, three live Wokwi
+simulation runs, and measured detector benchmarks. The shipped YOLO11s
+configuration achieved recall 0.477, F1 0.601, and mAP@0.5 0.640 on the
+128-image COCO128 evaluation set at a 320-pixel inference size. The
+report separates these measured results from the hardware measurements
+that remain pending, and it closes with limitations, future work, and
+the engineering lessons drawn from the short-circuit recovery.</p>
+<p><strong>Keywords:</strong> <em>autonomous rover; edge intelligence;
+ESP32-CAM; Arduino UNO; YOLO; differential drive; ultrasonic safety;
+TB6612FNG; power isolation; failure analysis.</em></p>
+<p>DOCUMENTATION NOTE</p>
+<p>This report is deliberately organised as an engineering narrative
+rather than a collection of disconnected specifications. Each build
+stage is anchored to the date and time carried by the original
+photograph, so the reader can follow the project in the same order in
+which it actually happened. The photographs are primary evidence: they
+show what was physically assembled, not what was intended.</p>
+<p>Three evidence labels are used throughout. [MEASURED] means the value
+came from a logged run or a bench instrument and is reproducible from
+the files in the repository. [DESIGN] means a calculated or selected
+value that has not yet been confirmed on the physical rover. [PENDING]
+means the check requires hardware that was not available, or was
+deferred after the 26 October incident. This convention prevents a
+design target from being mistaken for a measured result.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>How to read the build chapters</strong></p>
+<p>Chapters 5 and 6 are the component and assembly story. Chapter 7
+explains the electrical chain. Chapters 8 and 9 explain the software and
+safety logic. Chapter 10 presents the measured results. Chapter 11 is
+the incident case study. The appendices contain the bill of materials,
+pin map, photo index, and test summary.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<p>TABLE OF CONTENTS</p>
+<p><a href="#introduction">Introduction <span>1</span></a></p>
+<p><a href="#background">1.1 Background <span>1</span></a></p>
+<p><a href="#motivation">1.2 Motivation <span>1</span></a></p>
+<p><a href="#the-project-in-brief">1.3 The Project in Brief
+<span>2</span></a></p>
+<p><a href="#objectives">1.4 Objectives <span>2</span></a></p>
+<p><a href="#scope-and-delimitations">1.5 Scope and Delimitations
+<span>3</span></a></p>
+<p><a href="#report-organisation">1.6 Report Organisation
+<span>3</span></a></p>
+<p><a href="#problem-definition-and-requirements">Problem Definition and
+Requirements <span>5</span></a></p>
+<p><a href="#problem-statement">2.1 Problem Statement
+<span>5</span></a></p>
+<p><a href="#functional-requirements">2.2 Functional Requirements
+<span>5</span></a></p>
+<p><a href="#non-functional-requirements">2.3 Non-Functional
+Requirements <span>6</span></a></p>
+<p><a href="#constraints-and-assumptions">2.4 Constraints and
+Assumptions <span>6</span></a></p>
+<p><a href="#design-decisions-summary">2.5 Design Decisions Summary
+<span>6</span></a></p>
+<p><a href="#literature-review-and-technical-background">Literature
+Review and Technical Background <span>8</span></a></p>
+<p><a href="#differential-drive-locomotion">3.1 Differential-Drive
+Locomotion <span>8</span></a></p>
+<p><a href="#visual-servoing">3.2 Visual Servoing <span>9</span></a></p>
+<p><a href="#object-detection-on-the-edge">3.3 Object Detection on the
+Edge <span>10</span></a></p>
+<p><a href="#motor-drivers-and-power-electronics">3.4 Motor Drivers and
+Power Electronics <span>11</span></a></p>
+<p><a href="#safety-architectures-for-small-robots">3.5 Safety
+Architectures for Small Robots <span>11</span></a></p>
+<p><a href="#gap-addressed-by-this-project">3.6 Gap Addressed by This
+Project <span>12</span></a></p>
+<p><a href="#system-architecture">System Architecture
+<span>13</span></a></p>
+<p><a href="#tier-responsibilities">4.1 Tier Responsibilities
+<span>13</span></a></p>
+<p><a href="#end-to-end-data-flow">4.2 End-to-End Data Flow
+<span>13</span></a></p>
+<p><a href="#hardware-interconnection">4.3 Hardware Interconnection
+<span>14</span></a></p>
+<p><a href="#design-rationale">4.4 Design Rationale
+<span>15</span></a></p>
+<p><a href="#operating-modes">4.5 Operating Modes
+<span>16</span></a></p>
+<p><a href="#component-selection-and-hardware-inventory">Component
+Selection and Hardware Inventory <span>17</span></a></p>
+<p><a href="#selection-criteria">5.1 Selection Criteria
+<span>17</span></a></p>
+<p><a href="#compute-and-vision">5.2 Compute and Vision
+<span>17</span></a></p>
+<p><a href="#motion-and-actuation">5.3 Motion and Actuation
+<span>20</span></a></p>
+<p><a href="#power">5.4 Power <span>21</span></a></p>
+<p><a href="#sensing">5.5 Sensing <span>22</span></a></p>
+<p><a href="#control">5.6 Control <span>24</span></a></p>
+<p><a href="#bill-of-materials-summary">5.7 Bill of Materials Summary
+<span>25</span></a></p>
+<p><a href="#chronological-build-log">Chronological Build Log
+<span>26</span></a></p>
+<p><a href="#october-2026-the-sensor-arrives">6.1 3 October 2026: The
+Sensor Arrives <span>26</span></a></p>
+<p><a href="#october-2026-a-rolling-chassis">6.2 6 October 2026: A
+Rolling Chassis <span>27</span></a></p>
+<p><a href="#october-2026-mounting-the-ultrasonic-sensor">6.3 9 October
+2026: Mounting the Ultrasonic Sensor <span>31</span></a></p>
+<p><a href="#october-2026-bench-wiring-and-the-first-live-detection">6.4
+19 October 2026: Bench Wiring and the First Live Detection
+<span>32</span></a></p>
+<p><a href="#october-2026-the-two-tier-stack">6.5 20 October 2026: The
+Two-Tier Stack <span>36</span></a></p>
+<p><a href="#october-2026-the-wi-fi-stream">6.6 22 October 2026: The
+Wi-Fi Stream <span>38</span></a></p>
+<p><a href="#october-2026-insulated-joints">6.7 23 October 2026:
+Insulated Joints <span>39</span></a></p>
+<p><a href="#october-2026-driver-upgrade-and-the-short-circuit">6.8 26
+October 2026: Driver Upgrade and the Short Circuit
+<span>40</span></a></p>
+<p><a href="#build-summary">6.9 Build Summary <span>42</span></a></p>
+<p><a href="#power-architecture-and-wiring">Power Architecture and
+Wiring <span>43</span></a></p>
+<p><a href="#power-rails">7.1 Power Rails <span>43</span></a></p>
+<p><a href="#why-a-star-ground">7.2 Why a Star Ground
+<span>44</span></a></p>
+<p><a href="#fusing-and-switching">7.3 Fusing and Switching
+<span>45</span></a></p>
+<p><a href="#power-budget">7.4 Power Budget <span>45</span></a></p>
+<p><a href="#wiring-schedule">7.5 Wiring Schedule
+<span>45</span></a></p>
+<p><a href="#connector-and-harness-practice">7.6 Connector and Harness
+Practice <span>47</span></a></p>
+<p><a href="#software-and-ai-pipeline">Software and AI Pipeline
+<span>48</span></a></p>
+<p><a href="#host-software-architecture">8.1 Host Software Architecture
+<span>48</span></a></p>
+<p><a href="#detection-model">8.2 Detection Model
+<span>49</span></a></p>
+<p><a href="#decision-engine">8.3 Decision Engine
+<span>50</span></a></p>
+<p><a href="#communication-protocol">8.4 Communication Protocol
+<span>51</span></a></p>
+<p><a href="#esp32-cam-firmware">8.5 ESP32-CAM Firmware
+<span>52</span></a></p>
+<p><a href="#arduino-firmware">8.6 Arduino Firmware
+<span>53</span></a></p>
+<p><a href="#logging-and-reproducibility">8.7 Logging and
+Reproducibility <span>54</span></a></p>
+<p><a href="#control-law-and-safety-architecture">Control Law and Safety
+Architecture <span>55</span></a></p>
+<p><a href="#differential-drive-kinematics">9.1 Differential-Drive
+Kinematics <span>55</span></a></p>
+<p><a href="#steering-law">9.2 Steering Law <span>56</span></a></p>
+<p><a href="#finite-state-machine">9.3 Finite-State Machine
+<span>57</span></a></p>
+<p><a href="#safety-hierarchy">9.4 Safety Hierarchy
+<span>58</span></a></p>
+<p><a href="#watchdog-design">9.5 Watchdog Design
+<span>59</span></a></p>
+<p><a href="#failure-mode-and-effects-analysis">9.6 Failure Mode and
+Effects Analysis <span>60</span></a></p>
+<p><a href="#test-plan">9.7 Test Plan <span>60</span></a></p>
+<p><a href="#testing-and-measured-results">Testing and Measured Results
+<span>61</span></a></p>
+<p><a href="#verification-summary">10.1 Verification Summary
+<span>61</span></a></p>
+<p><a href="#detector-benchmark">10.2 Detector Benchmark
+<span>61</span></a></p>
+<p><a href="#runtime-backend-comparison">10.3 Runtime Backend Comparison
+<span>62</span></a></p>
+<p><a href="#event-log-evaluation">10.4 Event-Log Evaluation
+<span>63</span></a></p>
+<p><a href="#simulation-results">10.5 Simulation Results
+<span>64</span></a></p>
+<p><a href="#what-is-still-pending">10.6 What Is Still Pending
+<span>64</span></a></p>
+<p><a href="#case-study-the-26-october-battery-short-circuit">Case
+Study: The 26 October Battery Short Circuit <span>66</span></a></p>
+<p><a href="#what-happened">11.1 What Happened <span>66</span></a></p>
+<p><a href="#timeline">11.2 Timeline <span>67</span></a></p>
+<p><a href="#root-cause">11.3 Root Cause <span>67</span></a></p>
+<p><a href="#damage-assessment">11.4 Damage Assessment
+<span>68</span></a></p>
+<p><a href="#corrective-actions">11.5 Corrective Actions
+<span>69</span></a></p>
+<p><a href="#pre-power-checklist">11.6 Pre-Power Checklist
+<span>69</span></a></p>
+<p><a href="#lessons-learned">11.7 Lessons Learned
+<span>70</span></a></p>
+<p><a href="#discussion-limitations-and-future-work">Discussion,
+Limitations, and Future Work <span>71</span></a></p>
+<p><a href="#what-worked">12.1 What Worked <span>71</span></a></p>
+<p><a href="#limitations">12.2 Limitations <span>71</span></a></p>
+<p><a href="#threats-to-validity">12.3 Threats to Validity
+<span>71</span></a></p>
+<p><a href="#future-work">12.4 Future Work <span>72</span></a></p>
+<p><a href="#broader-reflection">12.5 Broader Reflection
+<span>72</span></a></p>
+<p><a href="#conclusion">Conclusion <span>73</span></a></p>
+<p><a href="#references">References <span>74</span></a></p>
+<p><a href="#bill-of-materials">Bill of Materials
+<span>75</span></a></p>
+<p><a href="#pin-map-and-wiring-reference">Pin Map and Wiring Reference
+<span>76</span></a></p>
+<p><a href="#photographic-index">Photographic Index
+<span>78</span></a></p>
+<p><a href="#test-summary">Test Summary <span>79</span></a></p>
+<p><a href="#repository-map-and-reproduction-notes">Repository Map and
+Reproduction Notes <span>80</span></a></p>
+<p>LIST OF FIGURES</p>
+<p><a href="#_Toc244027257">Figure 1: Three-tier system architecture:
+ESP32-CAM video, laptop perception and decision, Arduino UNO safety and
+actuation. <span>2</span></a></p>
+<p><a href="#_Toc244027258">Figure 2: Differential-drive geometry and
+the relationship between wheel speeds, linear velocity, and yaw rate.
+<span>9</span></a></p>
+<p><a href="#_Toc244027259">Figure 3: Three-zone image partitioning with
+a centre deadband used by the steering policy. <span>10</span></a></p>
+<p><a href="#_Toc244027260">Figure 4: End-to-end data flow from photons
+to wheel torque, with the safety veto applied before actuation.
+<span>14</span></a></p>
+<p><a href="#_Toc244027261">Figure 5: Hardware subsystem interconnection
+and signal topology. <span>15</span></a></p>
+<p><a href="#_Toc244027262">Figure 6: Complete rover block diagram
+showing the three tiers, power rails, and signal paths.
+<span>16</span></a></p>
+<p><a href="#_Toc244027263">Figure 7: ESP32-CAM module with the OV2640
+camera and microSD slot. <span>18</span></a></p>
+<p><a href="#_Toc244027264">Figure 8: HW-818 ESP32-S DevKit used as a
+bench reference board. <span>19</span></a></p>
+<p><a href="#_Toc244027265">Figure 9: ESP32-CAM on its micro-USB
+programming baseboard. <span>19</span></a></p>
+<p><a href="#_Toc244027266">Figure 10: TT DC gear motor used for the
+left and right wheels. <span>20</span></a></p>
+<p><a href="#_Toc244027267">Figure 11: TB6612FNG dual H-bridge module
+adopted after the incident. <span>21</span></a></p>
+<p><a href="#_Toc244027268">Figure 12: TB6612FNG pinout used to revise
+the wiring harness. <span>21</span></a></p>
+<p><a href="#_Toc244027269">Figure 13: 2S 18650 battery pack and LM2596
+buck converter. <span>22</span></a></p>
+<p><a href="#_Toc244027270">Figure 14: HC-SR04 with the acrylic mounting
+bracket. <span>23</span></a></p>
+<p><a href="#_Toc244027271">Figure 15: Close-up of the HC-SR04
+transducer. <span>23</span></a></p>
+<p><a href="#_Toc244027272">Figure 16: HC-SR04 pinout and DuPont
+connections. <span>24</span></a></p>
+<p><a href="#_Toc244027273">Figure 17: Arduino UNO R3 with the serial
+and control jumpers attached. <span>25</span></a></p>
+<p><a href="#_Toc244027274">Figure 18: Photo-documented build timeline
+for October 2026. The red marker is the short-circuit day.
+<span>26</span></a></p>
+<p><a href="#_Toc244027275">Figure 19: 3 October 2026: the HC-SR04 kit
+laid out before assembly. <span>27</span></a></p>
+<p><a href="#_Toc244027276">Figure 20: 6 October 2026: battery holder
+and rocker switch on the lower plate. <span>28</span></a></p>
+<p><a href="#_Toc244027277">Figure 21: 6 October 2026: dual TT motors
+mounted under the chassis. <span>29</span></a></p>
+<p><a href="#_Toc244027278">Figure 22: 6 October 2026: wheels and front
+caster mounted. <span>30</span></a></p>
+<p><a href="#_Toc244027279">Figure 23: 6 October 2026: the completed
+rolling base, top view. <span>30</span></a></p>
+<p><a href="#_Toc244027280">Figure 24: 9 October 2026: HC-SR04 mounted
+at the front of the chassis. <span>31</span></a></p>
+<p><a href="#_Toc244027281">Figure 25: 9 October 2026: detail of the
+ultrasonic bracket alignment. <span>32</span></a></p>
+<p><a href="#_Toc244027282">Figure 26: 19 October 2026: off-board bench
+wiring and first integration test. <span>33</span></a></p>
+<p><a href="#_Toc244027283">Figure 27: 19 October 2026, 21:23: Arduino
+UNO with control jumpers. <span>34</span></a></p>
+<p><a href="#_Toc244027284">Figure 28: 19 October 2026, 21:36: live YOLO
+tracking on an IP Webcam feed. <span>34</span></a></p>
+<p><a href="#_Toc244027285">Figure 29: 19 October 2026, 21:37:
+MissionPilot dashboard and host terminal. <span>35</span></a></p>
+<p><a href="#_Toc244027286">Figure 30: 19 October 2026: dry-fit of the
+electronics on the chassis top deck. <span>35</span></a></p>
+<p><a href="#_Toc244027287">Figure 31: 20 October 2026: two-tier
+prototype, side view. <span>36</span></a></p>
+<p><a href="#_Toc244027288">Figure 32: 20 October 2026: two-tier
+prototype, top view. <span>37</span></a></p>
+<p><a href="#_Toc244027289">Figure 33: 20 October 2026: underside wire
+routing through the chassis slots. <span>37</span></a></p>
+<p><a href="#_Toc244027290">Figure 34: 22 October 2026, 20:08:20: MJPEG
+stream viewed on a phone. <span>38</span></a></p>
+<p><a href="#_Toc244027291">Figure 35: 22 October 2026, 20:08:48:
+low-light stream calibration. <span>39</span></a></p>
+<p><a href="#_Toc244027292">Figure 36: 23 October 2026: motor harness
+with insulated soldered joints. <span>40</span></a></p>
+<p><a href="#_Toc244027293">Figure 37: 26 October 2026, 19:08:57:
+TB6612FNG before installation. <span>40</span></a></p>
+<p><a href="#_Toc244027294">Figure 38: 26 October 2026, 19:09:04:
+TB6612FNG pinout reference. <span>41</span></a></p>
+<p><a href="#_Toc244027295">Figure 39: 26 October 2026, after 20:14:
+damaged battery terminal and spring after the short circuit.
+<span>41</span></a></p>
+<p><a href="#_Toc244027296">Figure 40: Power distribution from the 2S
+pack to the motor and logic rails. <span>44</span></a></p>
+<p><a href="#_Toc244027297">Figure 41: Detailed wiring diagram for the
+rover harness. <span>46</span></a></p>
+<p><a href="#_Toc244027298">Figure 42: Schematic-level circuit diagram
+of the rover electronics. <span>47</span></a></p>
+<p><a href="#_Toc244027299">Figure 43: ESP32-CAM capture and streaming
+pipeline. <span>48</span></a></p>
+<p><a href="#_Toc244027300">Figure 44: Host decision pipeline from frame
+to command. <span>49</span></a></p>
+<p><a href="#_Toc244027301">Figure 45: Target position and horizontal
+error used by the decision engine. <span>50</span></a></p>
+<p><a href="#_Toc244027302">Figure 46: Left, centre, and right zones
+with the centre deadband. <span>51</span></a></p>
+<p><a href="#_Toc244027303">Figure 47: Host-to-Arduino communication
+protocol and state transitions. <span>52</span></a></p>
+<p><a href="#_Toc244027304">Figure 48: Flashing the ESP32-CAM firmware
+with esptool. <span>53</span></a></p>
+<p><a href="#_Toc244027305">Figure 49: Arduino safety and motor-control
+pipeline. <span>54</span></a></p>
+<p><a href="#_Toc244027306">Figure 50: Differential-drive geometry used
+by the control law. <span>55</span></a></p>
+<p><a href="#_Toc244027307">Figure 51: Step response for three
+proportional gains; the middle gain was selected for the rover.
+<span>56</span></a></p>
+<p><a href="#_Toc244027308">Figure 52: Closed-loop control from image
+error to wheel command. <span>57</span></a></p>
+<p><a href="#_Toc244027309">Figure 53: Rover finite-state machine and
+transition conditions. <span>58</span></a></p>
+<p><a href="#_Toc244027310">Figure 54: Layered safety hierarchy from
+host checks to electrical disable. <span>59</span></a></p>
+<p><a href="#_Toc244027311">Figure 55: Detector recall and median
+latency comparison. <span>62</span></a></p>
+<p><a href="#_Toc244027312">Figure 56: Median latency for the three
+YOLO11s runtime backends. <span>63</span></a></p>
+<p><a href="#_Toc244027313">Figure 57: Non-safe safety states recorded
+during the event-log campaign. <span>64</span></a></p>
+<p><a href="#_Toc244027314">Figure 58: Damaged battery terminal lug and
+compression spring photographed after the short circuit.
+<span>67</span></a></p>
+<p><a href="#_Toc244027315">Figure 59: Insulated motor joints adopted
+before the incident; the same practice was extended to the battery
+terminal. <span>69</span></a></p>
+<p>LIST OF TABLES</p>
+<p><a href="#_Toc244027316">Table 1: Abbreviations used in this report.
+<span>xii</span></a></p>
+<p><a href="#_Toc244027317">Table 2: Functional requirements and
+acceptance criteria. <span>5</span></a></p>
+<p><a href="#_Toc244027318">Table 3: Non-functional requirements.
+<span>6</span></a></p>
+<p><a href="#_Toc244027319">Table 4: Summary of the principal design
+decisions. <span>6</span></a></p>
+<p><a href="#_Toc244027320">Table 5: Comparison of the baseline L298N
+and the final TB6612FNG motor driver. <span>11</span></a></p>
+<p><a href="#_Toc244027321">Table 6: Responsibility and failure
+behaviour of the three tiers. <span>13</span></a></p>
+<p><a href="#_Toc244027322">Table 7: Operating modes and their safety
+behaviour. <span>16</span></a></p>
+<p><a href="#_Toc244027323">Table 8: Component selection criteria and
+their relative importance. <span>17</span></a></p>
+<p><a href="#_Toc244027324">Table 9: Subsystem-level bill of materials
+summary. <span>25</span></a></p>
+<p><a href="#_Toc244027325">Table 10: Build stages, dates, evidence, and
+outcomes. <span>42</span></a></p>
+<p><a href="#_Toc244027326">Table 11: Power rails, sources, loads, and
+protection. <span>43</span></a></p>
+<p><a href="#_Toc244027327">Table 12: Design power budget for the 5 V
+and motor rails [DESIGN]. <span>45</span></a></p>
+<p><a href="#_Toc244027328">Table 13: Arduino control pins for the
+baseline and final motor drivers. <span>46</span></a></p>
+<p><a href="#_Toc244027329">Table 14: Detector and decision parameters.
+<span>49</span></a></p>
+<p><a href="#_Toc244027330">Table 15: Serial command and telemetry
+protocol. <span>51</span></a></p>
+<p><a href="#_Toc244027331">Table 16: Finite-state machine states and
+transitions. <span>58</span></a></p>
+<p><a href="#_Toc244027332">Table 17: Safety layers, thresholds,
+actions, and supporting evidence. <span>59</span></a></p>
+<p><a href="#_Toc244027333">Table 18: Failure mode and effects analysis
+for the rover. <span>60</span></a></p>
+<p><a href="#_Toc244027334">Table 19: Verification summary for the final
+build. <span>61</span></a></p>
+<p><a href="#_Toc244027335">Table 20: Detector comparison on COCO128 at
+320-pixel input [MEASURED]. <span>61</span></a></p>
+<p><a href="#_Toc244027336">Table 21: YOLO11s runtime backend comparison
+[MEASURED]. <span>62</span></a></p>
+<p><a href="#_Toc244027337">Table 22: Event-log evaluation summary
+[MEASURED]. <span>63</span></a></p>
+<p><a href="#_Toc244027338">Table 23: Wokwi simulation runs and
+outcomes. <span>64</span></a></p>
+<p><a href="#_Toc244027339">Table 24: Reconstructed timeline of the 26
+October incident. <span>67</span></a></p>
+<p><a href="#_Toc244027340">Table 25: Root causes and corrective actions
+for the short-circuit incident. <span>68</span></a></p>
+<p><a href="#_Toc244027341">Table 26: Damage assessment and disposition
+of affected items. <span>68</span></a></p>
+<p><a href="#_Toc244027342">Table 27: Pre-power checklist introduced
+after the incident. <span>69</span></a></p>
+<p><a href="#_Toc244027343">Table 28: Limitations of the current
+prototype and possible remedies. <span>71</span></a></p>
+<p><a href="#_Toc244027344">Table 29: Indicative bill of materials for
+the final prototype. <span>75</span></a></p>
+<p><a href="#_Toc244027345">Table 30: Arduino UNO pin map for the final
+build. <span>76</span></a></p>
+<p><a href="#_Toc244027346">Table 31: ESP32-CAM pin usage. No data pins
+connect to the Arduino. <span>76</span></a></p>
+<p><a href="#_Toc244027347">Table 32: Photographic index with dates and
+report locations. <span>78</span></a></p>
+<p><a href="#_Toc244027348">Table 33: Test summary by area.
+<span>79</span></a></p>
+<p><a href="#_Toc244027349">Table 34: Repository map for reproduction
+and review. <span>80</span></a></p>
+<p>LIST OF ABBREVIATIONS</p>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027316" class="anchor"></span>Table 1:
+Abbreviations used in this report.</p></caption>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 74%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Abbreviation</strong></th>
+<th style="text-align: center;"><strong>Expansion</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AI</td>
+<td>Artificial Intelligence</td>
+</tr>
+<tr>
+<td>AP</td>
+<td>Access Point (Wi-Fi)</td>
+</tr>
+<tr>
+<td>BOM</td>
+<td>Bill of Materials</td>
+</tr>
+<tr>
+<td>CLAHE</td>
+<td>Contrast-Limited Adaptive Histogram Equalization</td>
+</tr>
+<tr>
+<td>CMOS</td>
+<td>Complementary Metal-Oxide-Semiconductor</td>
+</tr>
+<tr>
+<td>COCO</td>
+<td>Common Objects in Context (dataset)</td>
+</tr>
+<tr>
+<td>CPU</td>
+<td>Central Processing Unit</td>
+</tr>
+<tr>
+<td>DVP</td>
+<td>Digital Video Port</td>
+</tr>
+<tr>
+<td>FMEA</td>
+<td>Failure Mode and Effects Analysis</td>
+</tr>
+<tr>
+<td>FSM</td>
+<td>Finite State Machine</td>
+</tr>
+<tr>
+<td>GPIO</td>
+<td>General-Purpose Input/Output</td>
+</tr>
+<tr>
+<td>H-Bridge</td>
+<td>Electronic circuit that reverses motor polarity</td>
+</tr>
+<tr>
+<td>I2C</td>
+<td>Inter-Integrated Circuit (bus)</td>
+</tr>
+<tr>
+<td>IMU</td>
+<td>Inertial Measurement Unit</td>
+</tr>
+<tr>
+<td>Li-ion</td>
+<td style="text-align: center;">Lithium-ion</td>
+</tr>
+<tr>
+<td>LDO</td>
+<td>Low-Dropout Regulator</td>
+</tr>
+<tr>
+<td>MJPEG</td>
+<td style="text-align: center;">Motion JPEG</td>
+</tr>
+<tr>
+<td>MOSFET</td>
+<td>Metal-Oxide-Semiconductor Field-Effect Transistor</td>
+</tr>
+<tr>
+<td>PWM</td>
+<td>Pulse-Width Modulation</td>
+</tr>
+<tr>
+<td>RSS</td>
+<td>Resident Set Size (memory)</td>
+</tr>
+<tr>
+<td>SBC</td>
+<td>Single-Board Computer</td>
+</tr>
+<tr>
+<td>SLAM</td>
+<td>Simultaneous Localization and Mapping</td>
+</tr>
+<tr>
+<td>TTL</td>
+<td>Transistor-Transistor Logic</td>
+</tr>
+<tr>
+<td>UART</td>
+<td>Universal Asynchronous Receiver/Transmitter</td>
+</tr>
+<tr>
+<td>USB</td>
+<td>Universal Serial Bus</td>
+</tr>
+<tr>
+<td>YOLO</td>
+<td>You Only Look Once (object detector family)</td>
+</tr>
+</tbody>
+</table>
+<p>CHAPTER 1</p>
+<h1 id="introduction">Introduction</h1>
+<p>Autonomous mobile robotics sits at the intersection of mechanical
+design, power electronics, real-time control, and computer vision. A
+useful mobile robot must do more than move: it must build a usable
+picture of its surroundings, choose an action quickly enough to matter,
+and stop safely when the picture is incomplete. The difficulty is not
+any one of these tasks in isolation; it is making them cooperate on a
+small, low-cost platform.</p>
+<p>Conventional small robots often solve the perception problem by
+tethering the vehicle to a laptop or by streaming video to a remote
+server. This is convenient for a demonstration, but it introduces
+wireless latency, a dependency on network coverage, and a failure mode
+in which the robot keeps moving after the link has died. The alternative
+is to place all intelligence on the robot, which is attractive but
+quickly runs into the memory and thermal limits of inexpensive
+microcontrollers. This project takes a middle path: distribute the work
+across three units, but make the safety decision local and
+deterministic.</p>
+<h2 id="background">1.1 Background</h2>
+<p>A differential-drive robot is the simplest useful mobile platform.
+Two independently driven wheels on a common axis produce forward motion
+when they turn together and rotation when they turn at different speeds.
+The mathematics is well understood, the mechanics are inexpensive, and
+the platform is robust. The challenge is the perception and decision
+layer that turns a camera image into a left or right wheel command.</p>
+<p>Modern object detectors based on deep convolutional networks, and
+more recently on transformers, can locate people, bottles, and other
+objects in a video frame with useful accuracy. However, the accurate
+models are too large for a microcontroller. A practical student build
+therefore separates the detector, which runs on a laptop or single-board
+computer, from the actuator controller, which runs on a microcontroller
+and must never miss a safety deadline. This separation is the central
+architectural idea of the present rover.</p>
+<h2 id="motivation">1.2 Motivation</h2>
+<p>The motivation for the project came from three observations. First,
+many undergraduate robotics projects demonstrate motion but do not
+demonstrate dependable stopping. A robot that can follow a bottle but
+cannot stop at a wall is not yet a useful robot. Second, the components
+needed for a credible demonstration are now affordable: an ESP32-CAM, an
+Arduino UNO, a dual H-bridge, two gear motors, and an ultrasonic sensor
+cost less than a textbook. Third, the engineering is most convincing
+when the build itself is documented honestly, including the
+failures.</p>
+<p>The project was therefore framed around three questions. Can a
+low-cost rover track a visual target using only commodity parts? Can it
+guarantee a stop when the software, the camera, or the communication
+link fails? And can the build be documented in enough detail that
+another student could reproduce it, including the mistakes? The
+short-circuit incident described in Chapter 11 is part of that
+commitment to honest documentation.</p>
+<h2 id="the-project-in-brief">1.3 The Project in Brief</h2>
+<p>The rover is a two-wheel differential-drive platform with a front
+caster. An ESP32-CAM mounted on the upper deck captures video and serves
+it as a Wi-Fi MJPEG stream. A laptop pulls that stream, runs a
+YOLO-family detector, computes the horizontal error between the target
+bounding-box centre and the frame centre, and selects one of five
+commands: forward, backward, left, right, or stop. The command travels
+over USB serial to an Arduino UNO. The Arduino validates the character,
+checks the HC-SR04 distance, checks the communication watchdog, and only
+then drives the TB6612FNG dual H-bridge. The ESP32 and the Arduino have
+no data wire between them; the ESP32 is power-only. This avoids a 5
+V-to-3.3 V level-shift hazard and keeps the camera noise away from the
+motor controller.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image2.png"
+style="width:6.1in;height:3.90955in" />
+<figcaption><p><span id="_Toc244027257" class="anchor"></span>Figure 1:
+Three-tier system architecture: ESP32-CAM video, laptop perception and
+decision, Arduino UNO safety and actuation.</p></figcaption>
+</figure>
+<h2 id="objectives">1.4 Objectives</h2>
+<p>The project set out to achieve the following objectives:</p>
+<ol type="1">
+<li><p>Design and assemble a stable, repairable differential-drive
+chassis from acrylic plates, TT gear motors, a caster, and a 2S 18650
+battery pack.</p></li>
+<li><p>Build an isolated power architecture in which the motor rail and
+the logic rail are separate, with a common star ground and an inline
+fuse.</p></li>
+<li><p>Implement a camera pipeline that streams live video from the
+ESP32-CAM to the host over Wi-Fi without a wired data link to the
+Arduino.</p></li>
+<li><p>Implement a YOLO-based detector and a three-zone steering policy
+that converts a bounding box into forward, left, right, or stop
+commands.</p></li>
+<li><p>Implement a deterministic safety layer on the Arduino with a 3 s
+communication watchdog and a 15 cm forward obstacle cutoff.</p></li>
+<li><p>Document every build stage with date-stamped photographs and a
+written engineering narrative.</p></li>
+<li><p>Measure the detector and system performance, separate measured
+results from design estimates, and record the limitations
+honestly.</p></li>
+<li><p>Analyse the 26 October battery short-circuit incident, identify
+its root cause, and implement corrective actions that reduce the chance
+of recurrence.</p></li>
+</ol>
+<h2 id="scope-and-delimitations">1.5 Scope and Delimitations</h2>
+<p>The rover is an indoor, low-speed, single-target demonstrator. It is
+not a self-driving car, a SLAM platform, or a production robot. The
+perception stack tracks one target class at a time, the camera is
+monocular, and there are no wheel encoders in the baseline build. The
+laptop remains part of the control loop for detection and high-level
+decisions; the Arduino is the local safety authority. The project does
+not claim collision-free navigation in cluttered spaces, nor does it
+claim operation in rain, direct sunlight, or on steep slopes.</p>
+<p>Within those limits, the scope includes the complete mechanical
+build, the power and signal wiring, the ESP32 camera firmware, the
+Arduino motor and safety firmware, the host-side perception and decision
+software, a dashboard, a test suite, and the documentation set. The
+project deliberately excludes custom PCB fabrication, 3D-printed
+enclosures, and battery-management electronics; these are recorded as
+future work.</p>
+<h2 id="report-organisation">1.6 Report Organisation</h2>
+<p>Chapter 2 states the problem and the requirements. Chapter 3 reviews
+the relevant technical background. Chapter 4 describes the system
+architecture. Chapter 5 documents the components and the reasons for
+selecting them. Chapter 6 is the chronological build log, illustrated
+with the original photographs. Chapter 7 explains the wiring and power
+architecture. Chapter 8 describes the software and AI pipeline. Chapter
+9 covers the control law and the safety layers. Chapter 10 presents the
+test campaign and the measured results. Chapter 11 is the short-circuit
+case study. Chapter 12 discusses limitations and future work, and
+Chapter 13 concludes. The appendices contain the bill of materials, the
+pin map, the photo index, the test summary, and the repository map.</p>
+<p>CHAPTER 2</p>
+<h1 id="problem-definition-and-requirements">Problem Definition and
+Requirements</h1>
+<p>The problem is not simply to make a robot move. The problem is to
+make a robot behave acceptably when the world, the sensors, and the
+software are all imperfect. A camera can be blinded by a window; a Wi-Fi
+link can drop; an ultrasonic sensor can miss a soft or angled obstacle;
+a motor can stall; a battery terminal can touch a metal chassis. The
+design must be judged by how it behaves in those cases, not only by how
+well it follows a target in a clean corridor.</p>
+<h2 id="problem-statement">2.1 Problem Statement</h2>
+<p>Design and build a low-cost, vision-guided differential-drive rover
+that can track a designated object in indoor conditions and stop safely
+when an obstacle is detected, when the communication link is lost, or
+when the perception pipeline becomes stale. The rover must be repairable
+with hand tools, must run from a rechargeable battery, and must be
+documented in sufficient detail for another student to reproduce the
+build.</p>
+<p>The design must resolve a fundamental tension. Accurate vision
+requires computation that is difficult to place on a small
+microcontroller, while safety requires a controller that is not
+distracted by vision. The chosen resolution is a distributed
+architecture: the heavy perception runs on a laptop, the camera streams
+over Wi-Fi, and a separate microcontroller owns the motor and obstacle
+safety. The laptop may fail; the rover must still stop.</p>
+<h2 id="functional-requirements">2.2 Functional Requirements</h2>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027317" class="anchor"></span>Table 2:
+Functional requirements and acceptance criteria.</p></caption>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 24%" />
+<col style="width: 52%" />
+<col style="width: 10%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>ID</strong></th>
+<th style="text-align: center;"><strong>Requirement</strong></th>
+<th style="text-align: center;"><strong>Acceptance
+criterion</strong></th>
+<th style="text-align: center;"><strong>Priority</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FR-01</td>
+<td>Capture live video</td>
+<td>ESP32-CAM serves an MJPEG stream at a usable frame rate over
+Wi-Fi.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+<tr>
+<td>FR-02</td>
+<td>Detect the target</td>
+<td>The host detector returns a bounding box for the configured target
+class.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+<tr>
+<td>FR-03</td>
+<td>Steer toward the target</td>
+<td>The decision engine selects F, L, R, or S from the box centre
+error.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+<tr>
+<td>FR-04</td>
+<td>Drive the motors</td>
+<td>The Arduino drives both TT motors forward, backward, left, and
+right.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+<tr>
+<td>FR-05</td>
+<td>Stop at an obstacle</td>
+<td>Forward motion is refused when the HC-SR04 distance is below 15
+cm.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+<tr>
+<td>FR-06</td>
+<td>Stop on link loss</td>
+<td>The Arduino stops the motors after 3 s without a valid command.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+<tr>
+<td>FR-07</td>
+<td>Reject invalid commands</td>
+<td>Unknown characters produce STATUS:ERROR and no actuation.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+<tr>
+<td>FR-08</td>
+<td>Report telemetry</td>
+<td>Distance, status, and encoder ticks are reported over serial.</td>
+<td style="text-align: center;">P1</td>
+</tr>
+<tr>
+<td>FR-09</td>
+<td>Provide a dashboard</td>
+<td>The host displays the annotated frame, command, and safety
+state.</td>
+<td style="text-align: center;">P1</td>
+</tr>
+<tr>
+<td>FR-10</td>
+<td>Support a mock mode</td>
+<td>The host can run without hardware for demonstration and tests.</td>
+<td style="text-align: center;">P1</td>
+</tr>
+<tr>
+<td>FR-11</td>
+<td>Log the mission</td>
+<td>Frames, decisions, and safety states are recorded to CSV/JSON.</td>
+<td style="text-align: center;">P1</td>
+</tr>
+<tr>
+<td>FR-12</td>
+<td>Document the build</td>
+<td>Every stage has a dated photograph and a written note.</td>
+<td style="text-align: center;">P0</td>
+</tr>
+</tbody>
+</table>
+<h2 id="non-functional-requirements">2.3 Non-Functional
+Requirements</h2>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027318" class="anchor"></span>Table 3:
+Non-functional requirements.</p></caption>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 21%" />
+<col style="width: 64%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>ID</strong></th>
+<th style="text-align: center;"><strong>Requirement</strong></th>
+<th style="text-align: center;"><strong>Target / rationale</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NFR-01</td>
+<td style="text-align: center;">Safety</td>
+<td>No single software or link failure may cause uncontrolled forward
+motion.</td>
+</tr>
+<tr>
+<td>NFR-02</td>
+<td style="text-align: center;">Cost</td>
+<td>Prototype bill of materials below USD 70 using commodity
+modules.</td>
+</tr>
+<tr>
+<td>NFR-03</td>
+<td style="text-align: center;">Power</td>
+<td>At least 90 minutes of intermittent indoor operation from a 2S 18650
+pack.</td>
+</tr>
+<tr>
+<td>NFR-04</td>
+<td style="text-align: center;">Latency</td>
+<td>Detection refresh at or below 1.0 s on the host for closed-loop
+control.</td>
+</tr>
+<tr>
+<td>NFR-05</td>
+<td style="text-align: center;">Repairability</td>
+<td>Modules replaceable with a screwdriver and Dupont/soldered
+joints.</td>
+</tr>
+<tr>
+<td>NFR-06</td>
+<td style="text-align: center;">Portability</td>
+<td>The complete rover fits on a 20 cm x 15 cm chassis footprint.</td>
+</tr>
+<tr>
+<td>NFR-07</td>
+<td style="text-align: center;">Documentation</td>
+<td>Build steps reproducible from the report and repository files.</td>
+</tr>
+<tr>
+<td>NFR-08</td>
+<td style="text-align: center;">Maintainability</td>
+<td>Configuration in YAML; no hard-coded pins or thresholds in
+application logic.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="constraints-and-assumptions">2.4 Constraints and
+Assumptions</h2>
+<p>The design was carried out under the following constraints:</p>
+<ul>
+<li><p>The host laptop is part of the perception loop; the rover is not
+fully standalone.</p></li>
+<li><p>The camera is a single OV2640 sensor with no depth channel;
+distance is inferred from the bounding-box size and from the ultrasonic
+sensor.</p></li>
+<li><p>The baseline drivetrain has no wheel encoders, so straight-line
+motion is open-loop and is corrected by visual feedback rather than by
+odometry.</p></li>
+<li><p>The HC-SR04 has a narrow acoustic cone and can miss soft, angled,
+or sound-absorbing obstacles.</p></li>
+<li><p>The chassis is acrylic and the electronics are exposed; the build
+is a bench prototype, not a sealed product.</p></li>
+<li><p>The 2S 18650 pack, buck converter, and motor driver are commodity
+modules with limited datasheet guarantees.</p></li>
+<li><p>The project is developed in a student laboratory with hand tools
+and a limited component inventory.</p></li>
+</ul>
+<p>The key assumptions are that the floor is flat and dry, the lighting
+is between roughly 20 and 2000 lux, the target is visible from the front
+hemisphere, and the operator keeps the rover within Wi-Fi range. These
+assumptions are stated explicitly because the test results in Chapter 10
+are only valid within them.</p>
+<h2 id="design-decisions-summary">2.5 Design Decisions Summary</h2>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027319" class="anchor"></span>Table 4:
+Summary of the principal design decisions.</p></caption>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 25%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Decision</strong></th>
+<th style="text-align: center;"><strong>Alternative
+considered</strong></th>
+<th style="text-align: center;"><strong>Why this choice</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Three-tier split (ESP32 / laptop / Arduino)</td>
+<td>All-in-one ESP32 or Raspberry Pi</td>
+<td>Keeps vision off the safety controller; avoids a single point of
+failure.</td>
+</tr>
+<tr>
+<td>Wi-Fi MJPEG from ESP32</td>
+<td>Wired UART or USB camera</td>
+<td>No 5 V/3.3 V level-shift hazard; camera can be placed remotely.</td>
+</tr>
+<tr>
+<td>Arduino UNO safety supervisor</td>
+<td>ESP32 does everything</td>
+<td>Deterministic timing and simple, auditable firmware.</td>
+</tr>
+<tr>
+<td>TB6612FNG motor driver</td>
+<td>L298N bipolar driver</td>
+<td>Lower voltage drop, less heat, smaller module; adopted after the
+incident.</td>
+</tr>
+<tr>
+<td>HC-SR04 front ranging</td>
+<td style="text-align: center;">IR or LiDAR</td>
+<td>Low cost, simple interface, adequate for a 15 cm stop gate.</td>
+</tr>
+<tr>
+<td>YOLO11s at 320 px</td>
+<td>DETR / RT-DETR / larger YOLO</td>
+<td>Best measured accuracy that still meets the 1 s refresh budget.</td>
+</tr>
+<tr>
+<td>Laptop-in-the-loop</td>
+<td style="text-align: center;">On-board SBC</td>
+<td>Keeps cost and power low for a student prototype.</td>
+</tr>
+</tbody>
+</table>
+<p>CHAPTER 3</p>
+<h1 id="literature-review-and-technical-background">Literature Review
+and Technical Background</h1>
+<p>This chapter reviews the ideas that shaped the design. It is not an
+exhaustive survey; it focuses on the four areas that directly influenced
+the rover: differential-drive locomotion, visual servoing, edge-capable
+object detection, and safety architectures for small robots.</p>
+<h2 id="differential-drive-locomotion">3.1 Differential-Drive
+Locomotion</h2>
+<p>Differential drive is the most common locomotion scheme in low-cost
+robotics. Two wheels on a common axis are driven independently; a caster
+or skid supports the third point. The forward velocity and yaw rate are
+determined by the left and right wheel speeds. The scheme is
+mechanically simple and allows zero-radius rotation, which is valuable
+in tight indoor spaces. Its weaknesses are wheel slip, surface
+dependence, and the absence of a direct heading measurement unless an
+IMU or encoders are added.</p>
+<p>The classic treatment by Siegwart, Nourbakhsh, and Scaramuzza
+provides the kinematic model used in Chapter 9. For a wheel radius r,
+wheelbase L, and wheel angular speeds omega_L and omega_R, the linear
+velocity is v = r(omega_L + omega_R)/2 and the yaw rate is omega =
+r(omega_R - omega_L)/L. These equations are exact only when the wheels
+do not slip; in practice the rover uses visual feedback to compensate
+for the difference between the ideal and the real motion.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image3.png"
+style="width:5.78947in;height:4.35in" />
+<figcaption><p><span id="_Toc244027258" class="anchor"></span>Figure 2:
+Differential-drive geometry and the relationship between wheel speeds,
+linear velocity, and yaw rate.</p></figcaption>
+</figure>
+<h2 id="visual-servoing">3.2 Visual Servoing</h2>
+<p>Visual servoing uses feedback from a camera to control a robot's
+motion. In image-based visual servoing, the control error is defined
+directly in image coordinates, for example the horizontal distance
+between the target centroid and the image centre. This avoids the need
+for a calibrated 3D model of the scene and is well suited to a low-cost
+monocular camera. The price is that depth is not directly observed; the
+controller must rely on apparent size or on an auxiliary range
+sensor.</p>
+<p>The rover uses a simple image-based policy. The frame is divided into
+left, centre, and right zones. If the target centroid lies in the left
+zone, the rover turns left; if it lies in the right zone, it turns
+right; if it lies in the centre zone, it moves forward. A deadband
+around the centre reduces oscillation. The policy is deliberately
+coarse, because a coarse policy is easier to test and safer than a
+finely tuned controller that chatters when the detector is noisy.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image4.png"
+style="width:6.1in;height:3.69882in" />
+<figcaption><p><span id="_Toc244027259" class="anchor"></span>Figure 3:
+Three-zone image partitioning with a centre deadband used by the
+steering policy.</p></figcaption>
+</figure>
+<h2 id="object-detection-on-the-edge">3.3 Object Detection on the
+Edge</h2>
+<p>The YOLO family, introduced by Redmon et al., reframed object
+detection as a single regression problem and made real-time detection
+practical on commodity hardware. Later YOLO versions improved accuracy
+and efficiency through better backbones, feature pyramids, and training
+strategies. Transformer-based detectors such as DETR and RT-DETR removed
+the need for hand-designed anchors and non-maximum suppression, but
+their computational cost is higher, especially on CPU-only hosts.</p>
+<p>For a microcontroller, even a small YOLO model is too large to run
+comfortably. The TinyML community addresses this with quantization,
+pruning, and specialised architectures such as FOMO, but these methods
+require a training pipeline and a carefully curated dataset. This
+project takes a pragmatic approach: the detector runs on the host
+laptop, where a full YOLO model can be executed at a usable frame rate,
+while the rover keeps only the safety-critical logic on the
+microcontroller. The trade-off is accepted because the project is a
+prototype, not a product.</p>
+<p>The detector comparison in Chapter 10 is important because it shows
+that the largest or most accurate model is not automatically the right
+choice. RT-DETRv2-R18 achieved the highest recall and mAP, but its
+median latency was 3.4 s per frame, which breaks the 1 s control budget.
+The selected YOLO11s model was the most accurate model that still closed
+the loop.</p>
+<h2 id="motor-drivers-and-power-electronics">3.4 Motor Drivers and Power
+Electronics</h2>
+<p>A DC gear motor cannot be driven directly from a microcontroller pin.
+An H-bridge is required to reverse the polarity and to modulate the
+average voltage with PWM. The L298N is a widely used bipolar H-bridge
+that is inexpensive and tolerant, but its internal Darlington output
+stage drops roughly 1.8 V to 3.2 V, which turns into heat and reduces
+the voltage available to the motor. MOSFET-based drivers such as the
+TB6612FNG have a much lower on-resistance and run cooler.</p>
+<p>The original design used the L298N because it was available in the
+laboratory and because its behaviour is well documented. After the 26
+October incident, the rover was rebuilt with a TB6612FNG. The change
+reduced the driver's voltage drop and thermal load, and it made the
+wiring more compact. The trade-off is that the TB6612FNG has a lower
+absolute maximum voltage and requires a logic supply and a standby pin,
+so the wiring and firmware pin map had to be revised.</p>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027320" class="anchor"></span>Table 5:
+Comparison of the baseline L298N and the final TB6612FNG motor
+driver.</p></caption>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 35%" />
+<col style="width: 32%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Property</strong></th>
+<th style="text-align: center;"><strong>L298N (baseline)</strong></th>
+<th style="text-align: center;"><strong>TB6612FNG (final)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Output stage</td>
+<td>Bipolar Darlington</td>
+<td style="text-align: center;">MOSFET</td>
+</tr>
+<tr>
+<td>Typical voltage drop</td>
+<td style="text-align: center;">1.8 V - 3.2 V</td>
+<td style="text-align: center;">&lt; 0.2 V</td>
+</tr>
+<tr>
+<td>Continuous current</td>
+<td>2 A per channel (with heatsink)</td>
+<td style="text-align: center;">1.2 A per channel</td>
+</tr>
+<tr>
+<td>Logic supply</td>
+<td>5 V onboard regulator</td>
+<td style="text-align: center;">2.7 V - 5.5 V VCC</td>
+</tr>
+<tr>
+<td>Standby control</td>
+<td style="text-align: center;">None</td>
+<td style="text-align: center;">STBY pin</td>
+</tr>
+<tr>
+<td>Thermal behaviour</td>
+<td>Requires heatsink</td>
+<td style="text-align: center;">Runs cool at rover currents</td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td>Large red module</td>
+<td style="text-align: center;">Compact breakout</td>
+</tr>
+</tbody>
+</table>
+<h2 id="safety-architectures-for-small-robots">3.5 Safety Architectures
+for Small Robots</h2>
+<p>Safety in small robots is often treated as a software feature: a
+check inside the main loop. A more robust approach is to give safety its
+own layer with the authority to override every other command. The rover
+follows this principle. The Arduino firmware checks the obstacle
+distance and the communication watchdog before it applies any motor
+command. The host software also checks the camera health and the serial
+link, but the host is not trusted to be the last line of defence.</p>
+<p>This layering is inspired by the fail-safe principle used in
+industrial control: the absence of a valid signal must produce a safe
+state, not a continuation of the last command. The rover's safe state is
+STOP, with the motor driver disabled. The same principle appears in the
+FMEA in Chapter 9 and in the incident analysis in Chapter 11.</p>
+<h2 id="gap-addressed-by-this-project">3.6 Gap Addressed by This
+Project</h2>
+<p>The literature offers excellent treatments of each individual
+subsystem, but relatively few accessible accounts show how the pieces
+are integrated on a student budget, including the wiring, the power
+isolation, the test evidence, and the failures. This project contributes
+a complete, reproducible build narrative: a photo-dated record of the
+mechanical assembly, a measured detector comparison, a layered safety
+design, and an honest case study of a battery short circuit and its
+recovery. The contribution is therefore as much methodological as
+technical.</p>
+<p>CHAPTER 4</p>
+<h1 id="system-architecture">System Architecture</h1>
+<p>The rover is organised as three cooperating tiers. The first tier is
+the ESP32-CAM, which captures video and serves it over Wi-Fi. The second
+tier is the host laptop, which runs the detector, the decision engine,
+the safety manager, the dashboard, and the logger. The third tier is the
+Arduino UNO, which owns the motors, the ultrasonic sensor, and the hard
+real-time safety interlocks. The tiers are deliberately asymmetric: the
+laptop may be slow or disconnected, but the Arduino must always be able
+to stop the rover.</p>
+<h2 id="tier-responsibilities">4.1 Tier Responsibilities</h2>
+<table style="width:100%;">
+<caption><p><span id="_Toc244027321" class="anchor"></span>Table 6:
+Responsibility and failure behaviour of the three tiers.</p></caption>
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 26%" />
+<col style="width: 41%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Tier</strong></th>
+<th style="text-align: center;"><strong>Hardware /
+software</strong></th>
+<th style="text-align: center;"><strong>Responsibility</strong></th>
+<th style="text-align: center;"><strong>Failure behaviour</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>ESP32-CAM (AI-Thinker, OV2640)</td>
+<td>Capture VGA frames, serve MJPEG over Wi-Fi, auto-reconnect.</td>
+<td>Video stops; host sends STOP.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Laptop host (Python)</td>
+<td>Detect target, compute error, choose command, log events, display
+dashboard.</td>
+<td>Host stops sending; Arduino watchdog stops motors.</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Arduino UNO R3</td>
+<td>Validate command, read HC-SR04, enforce 15 cm gate and 3 s watchdog,
+drive TB6612FNG.</td>
+<td>Motors disabled; safe state.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="end-to-end-data-flow">4.2 End-to-End Data Flow</h2>
+<p>Every frame follows the same five-step loop, repeated roughly five to
+ten times per second depending on the host load. The steps are SEE,
+UNDERSTAND, DECIDE, ACT, and PROTECT. The loop is intentionally simple
+so that each step can be tested in isolation and so that a failure at
+any step has a defined safe outcome.</p>
+<ol start="9" type="1">
+<li><p>SEE: the ESP32-CAM captures an OV2640 frame and serves it as
+MJPEG. The host pulls the stream and stores the latest frame.</p></li>
+<li><p>UNDERSTAND: the detector returns a bounding box for the target
+class. The box centre is compared with the frame centre to produce a
+horizontal error.</p></li>
+<li><p>DECIDE: the steering policy maps the error to a zone and selects
+F, L, R, or S. The safety manager can veto the decision.</p></li>
+<li><p>ACT: the approved one-character command is sent over USB serial
+to the Arduino.</p></li>
+<li><p>PROTECT: the Arduino re-checks the command, the obstacle
+distance, and the watchdog before it enables the motor driver.</p></li>
+</ol>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image5.png"
+style="width:6.1in;height:3.37164in" />
+<figcaption><p><span id="_Toc244027260" class="anchor"></span>Figure 4:
+End-to-end data flow from photons to wheel torque, with the safety veto
+applied before actuation.</p></figcaption>
+</figure>
+<h2 id="hardware-interconnection">4.3 Hardware Interconnection</h2>
+<p>The hardware interconnection is deliberately sparse. The ESP32-CAM
+receives 5 V and ground from the buck converter and nothing else. Video
+leaves it as Wi-Fi MJPEG. The laptop connects to the Arduino with a USB
+cable, which carries both the command stream and the telemetry. The
+Arduino connects to the TB6612FNG with six control lines (PWMA, AIN1,
+AIN2, BIN1, BIN2, PWMB) plus STBY, and to the HC-SR04 with TRIG and
+ECHO. The motor driver connects to the two TT motors and to the 7.4 V
+battery rail. All grounds meet at a single star point.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image6.png"
+style="width:6.1in;height:3.84577in" />
+<figcaption><p><span id="_Toc244027261" class="anchor"></span>Figure 5:
+Hardware subsystem interconnection and signal topology.</p></figcaption>
+</figure>
+<p>The absence of a data wire between the ESP32 and the Arduino is a
+deliberate safety decision. The ESP32 is a 3.3 V device, while the
+Arduino is a 5 V device. A direct UART connection would expose the ESP32
+to 5 V on its GPIO pins, which can destroy the pin or the chip. A level
+shifter could solve the electrical problem, but it would add another
+component and another failure point. Since the laptop already has a USB
+link to the Arduino, the ESP32 does not need a wired data path. The
+design therefore keeps the ESP32 power-only.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Why the ESP32 is power-only</strong></p>
+<p>The ESP32-CAM has no data wire to the Arduino. Video travels over
+Wi-Fi to the laptop, and commands travel from the laptop to the Arduino
+over USB serial. This avoids a 5 V-to-3.3 V level-shift hazard and keeps
+the camera's power noise away from the motor controller. If a wired UART
+is ever added, a level shifter is mandatory.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="design-rationale">4.4 Design Rationale</h2>
+<p>The architecture is a response to three constraints: compute, safety,
+and cost. Compute is concentrated on the laptop because that is where a
+full YOLO model can run. Safety is concentrated on the Arduino because a
+small, single-purpose firmware is easier to audit than a large Python
+process. Cost is kept low by using commodity modules and by avoiding a
+single-board computer on the rover. The result is not the most compact
+design possible, but it is one of the easiest to understand, test, and
+repair.</p>
+<p>The split also makes the failure modes easier to reason about. If the
+Wi-Fi link drops, the host sees a stale frame and sends STOP; if the
+host itself dies, the Arduino watchdog stops the motors; if the Arduino
+loses power, the motor driver is disabled. There is no state in which
+silence means “keep driving”. This property is the most important
+architectural achievement of the project.</p>
+<h2 id="operating-modes">4.5 Operating Modes</h2>
+<table>
+<caption><p><span id="_Toc244027322" class="anchor"></span>Table 7:
+Operating modes and their safety behaviour.</p></caption>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 29%" />
+<col style="width: 26%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Mode</strong></th>
+<th style="text-align: center;"><strong>Purpose</strong></th>
+<th style="text-align: center;"><strong>Hardware required</strong></th>
+<th style="text-align: center;"><strong>Safety behaviour</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Observe</td>
+<td>Track a target and log decisions without autonomous motion.</td>
+<td>Camera + optional Arduino</td>
+<td>STOP on stale frame or low confidence.</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Rotate or scan to reacquire a lost target.</td>
+<td>Camera + Arduino</td>
+<td>STOP if no target after the search timeout.</td>
+</tr>
+<tr>
+<td>Scan 360</td>
+<td>Discrete panoramic scan using a servo or timed rotation.</td>
+<td>Camera + servo (optional)</td>
+<td>STOP between scan steps.</td>
+</tr>
+<tr>
+<td>Manual</td>
+<td>Operator sends F/B/L/R/S directly.</td>
+<td>Arduino + serial link</td>
+<td>Obstacle gate and watchdog remain active.</td>
+</tr>
+<tr>
+<td>Mock</td>
+<td>Run the full host pipeline without hardware.</td>
+<td style="text-align: center;">Laptop only</td>
+<td>No actuation; deterministic test data.</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image7.png"
+style="width:6.1in;height:4.16186in" />
+<figcaption><p><span id="_Toc244027262" class="anchor"></span>Figure 6:
+Complete rover block diagram showing the three tiers, power rails, and
+signal paths.</p></figcaption>
+</figure>
+<p>CHAPTER 5</p>
+<h1 id="component-selection-and-hardware-inventory">Component Selection
+and Hardware Inventory</h1>
+<p>Every component in the rover had to justify its place. The selection
+criteria were cost, availability in the laboratory, ease of replacement,
+and compatibility with the three-tier architecture. This chapter records
+what was chosen, what was rejected, and why. The photographs are the
+original component images, taken before assembly, and they are used here
+as the primary record of the parts that were actually on the bench.</p>
+<h2 id="selection-criteria">5.1 Selection Criteria</h2>
+<p>The rover is a student prototype, so the selection process was driven
+by what could be sourced quickly and repaired easily. A component was
+preferred if it used a standard interface (USB, UART, PWM, or a 0.1-inch
+header), if it could be replaced without resoldering the whole harness,
+and if its failure mode was predictable. Components that required a
+custom PCB, a proprietary toolchain, or a long delivery time were
+rejected even when their specifications were better.</p>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027323" class="anchor"></span>Table 8:
+Component selection criteria and their relative
+importance.</p></caption>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 10%" />
+<col style="width: 60%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Criterion</strong></th>
+<th style="text-align: center;"><strong>Weight</strong></th>
+<th style="text-align: center;"><strong>What it meant in
+practice</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Safety</td>
+<td style="text-align: center;">High</td>
+<td>The part must fail in a predictable, preferably open, state.</td>
+</tr>
+<tr>
+<td>Availability</td>
+<td style="text-align: center;">High</td>
+<td>The part must be in the lab or deliverable within days.</td>
+</tr>
+<tr>
+<td>Cost</td>
+<td style="text-align: center;">Medium</td>
+<td>The complete prototype should stay below USD 70.</td>
+</tr>
+<tr>
+<td>Interface simplicity</td>
+<td style="text-align: center;">Medium</td>
+<td>0.1-inch headers and standard serial buses preferred.</td>
+</tr>
+<tr>
+<td>Replaceability</td>
+<td style="text-align: center;">Medium</td>
+<td>A failed module should be swappable with a screwdriver.</td>
+</tr>
+<tr>
+<td>Performance</td>
+<td style="text-align: center;">Medium</td>
+<td>Adequate for indoor, low-speed, single-target operation.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="compute-and-vision">5.2 Compute and Vision</h2>
+<p>The vision tier uses an AI-Thinker ESP32-CAM with an OV2640 sensor.
+The module combines a 240 MHz dual-core ESP32, 520 KB of SRAM, 4 MB of
+flash, a microSD slot, and a 2 MP camera on a small PCB. It is
+inexpensive and widely documented, and it can serve an MJPEG stream over
+Wi-Fi without any additional hardware. Its limitations are equally
+important: it has no USB-serial bridge on the camera board, so flashing
+requires a baseboard or a jumper sequence, and its 3.3 V logic is not
+compatible with the Arduino's 5 V logic.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image8.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027263" class="anchor"></span>Figure 7:
+ESP32-CAM module with the OV2640 camera and microSD
+slot.</p></figcaption>
+</figure>
+<p>A separate HW-818 ESP32-S DevKit was used during development for
+serial monitoring and for testing Wi-Fi behaviour. It is not part of the
+final rover; it served as a known-good reference when the camera board
+behaved unexpectedly. Keeping a second ESP32 on the bench is a practical
+debugging strategy: it lets the developer separate a firmware problem
+from a hardware problem.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image9.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027264" class="anchor"></span>Figure 8:
+HW-818 ESP32-S DevKit used as a bench reference board.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image10.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027265" class="anchor"></span>Figure 9:
+ESP32-CAM on its micro-USB programming baseboard.</p></figcaption>
+</figure>
+<h2 id="motion-and-actuation">5.3 Motion and Actuation</h2>
+<p>The drivetrain uses two yellow TT DC gear motors. Each motor
+integrates a plastic gearbox with a high reduction ratio, which trades
+speed for torque and makes the rover controllable at low PWM values. The
+motors are inexpensive, widely available, and mechanically compatible
+with the acrylic chassis and the rubber tread wheels. Their weaknesses
+are plastic gears, no encoders, and a wide unit-to-unit variation in
+speed for the same PWM command.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image11.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027266" class="anchor"></span>Figure 10:
+TT DC gear motor used for the left and right wheels.</p></figcaption>
+</figure>
+<p>The baseline motor driver was an L298N dual H-bridge. It is robust
+and forgiving, and it was available in the laboratory. However, its
+Darlington output stage drops a significant voltage, which reduces the
+motor speed and produces heat. After the 26 October incident, the rover
+was rebuilt with a TB6612FNG MOSFET driver, which has a much lower
+voltage drop and runs cooler. Both drivers were photographed so the
+change is documented rather than hidden.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image12.jpg"
+style="width:6.1in;height:2.74161in" />
+<figcaption><p><span id="_Toc244027267" class="anchor"></span>Figure 11:
+TB6612FNG dual H-bridge module adopted after the
+incident.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image13.jpg"
+style="width:6.1in;height:2.74161in" />
+<figcaption><p><span id="_Toc244027268" class="anchor"></span>Figure 12:
+TB6612FNG pinout used to revise the wiring harness.</p></figcaption>
+</figure>
+<h2 id="power">5.4 Power</h2>
+<p>The rover is powered by a 2S 18650 lithium-ion pack with a nominal
+voltage of 7.4 V. The pack feeds the motor driver directly and feeds an
+LM2596 buck converter, which produces a regulated 5 V rail for the
+Arduino, the ESP32-CAM, and the ultrasonic sensor. The LM2596 is a
+switching regulator, so it is more efficient than a linear regulator,
+but it requires careful adjustment before connection. The output voltage
+must be set to 5.0 V with a multimeter before any logic board is
+attached.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image14.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027269" class="anchor"></span>Figure 13:
+2S 18650 battery pack and LM2596 buck converter.</p></figcaption>
+</figure>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Set the buck before you connect it</strong></p>
+<p>The LM2596 output is adjusted with a small potentiometer. Connect the
+battery to the input, measure the output with a multimeter, and turn the
+potentiometer until the output reads 5.0 V. Only then connect the
+Arduino and the ESP32-CAM. A mis-set buck can destroy both boards in
+less than a second.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="sensing">5.5 Sensing</h2>
+<p>The HC-SR04 ultrasonic sensor provides a short-range forward obstacle
+gate. It measures distance by timing the echo of a 40 kHz burst, and it
+interfaces with two digital pins (TRIG and ECHO). It is cheap, simple,
+and adequate for a 15 cm stop threshold. It is not a precision
+instrument: its cone is narrow, it can miss soft or angled surfaces, and
+its readings become unreliable beyond about 2 m. The rover uses it as a
+safety gate, not as a mapping sensor.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image15.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027270" class="anchor"></span>Figure 14:
+HC-SR04 with the acrylic mounting bracket.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image16.jpg"
+style="width:1.95508in;height:4.35in" />
+<figcaption><p><span id="_Toc244027271" class="anchor"></span>Figure 15:
+Close-up of the HC-SR04 transducer.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image17.jpg"
+style="width:1.95508in;height:4.35in" />
+<figcaption><p><span id="_Toc244027272" class="anchor"></span>Figure 16:
+HC-SR04 pinout and DuPont connections.</p></figcaption>
+</figure>
+<h2 id="control">5.6 Control</h2>
+<p>The Arduino UNO R3 is the safety supervisor. It was chosen because it
+is ubiquitous, 5 V tolerant, easy to audit, and supported by a mature
+toolchain. It has enough digital pins for the motor driver, the
+ultrasonic sensor, and a serial link, and its analog inputs are
+available for future current sensing. Its limitations are a 16 MHz
+clock, 2 KB of SRAM, and no floating-point accelerator, but none of
+these matter for the small safety firmware.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image18.jpg"
+style="width:1.95508in;height:4.35in" />
+<figcaption><p><span id="_Toc244027273" class="anchor"></span>Figure 17:
+Arduino UNO R3 with the serial and control jumpers
+attached.</p></figcaption>
+</figure>
+<h2 id="bill-of-materials-summary">5.7 Bill of Materials Summary</h2>
+<p>The complete bill of materials is given in Appendix A. The prototype
+cost is dominated by the ESP32-CAM, the battery pack, and the motor
+driver. The chassis, fasteners, and wiring are low-cost consumables. The
+rover was built from parts that were already in the laboratory plus a
+small number of purchases, which is typical of a student project and is
+one reason the design emphasizes replaceability.</p>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027324" class="anchor"></span>Table 9:
+Subsystem-level bill of materials summary.</p></caption>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 31%" />
+<col style="width: 12%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Subsystem</strong></th>
+<th style="text-align: center;"><strong>Key part</strong></th>
+<th style="text-align: center;"><strong>Quantity</strong></th>
+<th style="text-align: center;"><strong>Role</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vision</td>
+<td>ESP32-CAM (OV2640)</td>
+<td style="text-align: center;">1</td>
+<td>Wi-Fi video stream</td>
+</tr>
+<tr>
+<td>Control</td>
+<td>Arduino UNO R3</td>
+<td style="text-align: center;">1</td>
+<td>Safety supervisor and motor control</td>
+</tr>
+<tr>
+<td>Drive</td>
+<td>TT DC gear motor</td>
+<td style="text-align: center;">2</td>
+<td>Differential propulsion</td>
+</tr>
+<tr>
+<td>Driver</td>
+<td>TB6612FNG (final)</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">Dual H-bridge</td>
+</tr>
+<tr>
+<td>Ranging</td>
+<td style="text-align: center;">HC-SR04</td>
+<td style="text-align: center;">1</td>
+<td>Forward obstacle gate</td>
+</tr>
+<tr>
+<td>Power</td>
+<td style="text-align: center;">2S 18650 pack</td>
+<td style="text-align: center;">1</td>
+<td>7.4 V main rail</td>
+</tr>
+<tr>
+<td>Power</td>
+<td style="text-align: center;">LM2596 buck</td>
+<td style="text-align: center;">1</td>
+<td>5 V logic rail</td>
+</tr>
+<tr>
+<td>Chassis</td>
+<td>Acrylic plates + caster</td>
+<td style="text-align: center;">1 set</td>
+<td>Structural base</td>
+</tr>
+<tr>
+<td>Wiring</td>
+<td>Dupont / soldered harness</td>
+<td style="text-align: center;">1 set</td>
+<td>Power and signals</td>
+</tr>
+</tbody>
+</table>
+<p>CHAPTER 6</p>
+<h1 id="chronological-build-log">Chronological Build Log</h1>
+<p>This chapter is the heart of the report. It follows the build in the
+order in which it happened, using the dates embedded in the original
+photograph filenames. The narrative is deliberately concrete: it records
+what was bolted, soldered, flashed, and measured on each day, and it
+notes the problems that appeared. Where a photograph was taken at a
+known time, the time is included; otherwise only the date is
+claimed.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image19.png"
+style="width:6.1in;height:1.80901in" />
+<figcaption><p><span id="_Toc244027274" class="anchor"></span>Figure 18:
+Photo-documented build timeline for October 2026. The red marker is the
+short-circuit day.</p></figcaption>
+</figure>
+<h2 id="october-2026-the-sensor-arrives">6.1 3 October 2026: The Sensor
+Arrives</h2>
+<p>The first dated artefact is the HC-SR04 kit, photographed on 3
+October 2026. The package contained the sensor, an acrylic bracket, and
+a rainbow ribbon cable. Laying the parts out before assembly was useful:
+it confirmed that the bracket matched the sensor's mounting holes and
+that the cable was long enough to reach the front of the chassis. The
+kit set the physical scale for the rest of the build.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image15.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027275" class="anchor"></span>Figure 19:
+3 October 2026: the HC-SR04 kit laid out before
+assembly.</p></figcaption>
+</figure>
+<h2 id="october-2026-a-rolling-chassis">6.2 6 October 2026: A Rolling
+Chassis</h2>
+<p>The chassis was assembled on 6 October. The first step was to bolt
+the battery holder and the rocker switch to the lower acrylic plate. The
+holder was positioned toward the rear so that the heavier cells would
+sit over the drive wheels, and the switch was placed where a finger
+could reach it without lifting the rover. The switch is a single-pole
+single-throw rocker rated for the pack current; it is the only way to
+remove power from the entire system.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image20.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027276" class="anchor"></span>Figure 20:
+6 October 2026: battery holder and rocker switch on the lower
+plate.</p></figcaption>
+</figure>
+<p>The two TT motors were then secured to the underside of the plate
+with acrylic T-brackets and machine screws. The brackets were aligned by
+eye and tightened gradually, alternating sides so that the plate would
+not warp. The motor shafts must be parallel; if one motor is skewed, the
+rover will curve even when both wheels are commanded to the same speed.
+This is a mechanical problem that no amount of software can fully
+correct.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image21.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027277" class="anchor"></span>Figure 21:
+6 October 2026: dual TT motors mounted under the
+chassis.</p></figcaption>
+</figure>
+<p>The rubber tread wheels were pressed onto the motor axles, and the
+front caster was bolted to the plate. The caster provides the third
+support point and allows the rover to rotate about its own centre. With
+the wheels and caster in place, the chassis could roll freely on the
+bench. The top view shows that the wheel track is wider than the battery
+holder, which gives the rover a low centre of gravity and good
+resistance to tipping during turns.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image22.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027278" class="anchor"></span>Figure 22:
+6 October 2026: wheels and front caster mounted.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image23.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027279" class="anchor"></span>Figure 23:
+6 October 2026: the completed rolling base, top view.</p></figcaption>
+</figure>
+<h2 id="october-2026-mounting-the-ultrasonic-sensor">6.3 9 October 2026:
+Mounting the Ultrasonic Sensor</h2>
+<p>The HC-SR04 was mounted on 9 October at the end of the chassis, using
+the acrylic bracket from the kit. The sensor faces forward and slightly
+upward, which reduces false echoes from the floor. The motor leads were
+routed along the side of the plate and secured with tape so that they
+would not be caught by the wheels. The bracket is rigid enough that the
+sensor does not vibrate during motion, which matters because a vibrating
+sensor produces erratic distance readings.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image24.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027280" class="anchor"></span>Figure 24:
+9 October 2026: HC-SR04 mounted at the front of the
+chassis.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image25.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027281" class="anchor"></span>Figure 25:
+9 October 2026: detail of the ultrasonic bracket
+alignment.</p></figcaption>
+</figure>
+<h2 id="october-2026-bench-wiring-and-the-first-live-detection">6.4 19
+October 2026: Bench Wiring and the First Live Detection</h2>
+<p>The bench session on 19 October was the first time the electronics
+were connected outside the chassis. The power bank, Arduino UNO, ESP32,
+and ultrasonic sensor were laid out on the bench and wired one subsystem
+at a time. The purpose was to verify each connection before it was
+buried in the chassis. The photograph shows the characteristic mess of a
+first integration: long jumper wires, an exposed buck converter, and a
+laptop close enough to yank the USB cable.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image26.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027282" class="anchor"></span>Figure 26:
+19 October 2026: off-board bench wiring and first integration
+test.</p></figcaption>
+</figure>
+<p>Later that evening, at 21:23, the Arduino was photographed with its
+serial and control jumpers attached. At 21:36 and 21:37, the host laptop
+was running a live YOLO session on an IP Webcam feed and the
+MissionPilot dashboard. The dashboard showed the annotated frame, the
+detected target, and the command state. This was the first end-to-end
+perception run, even though the rover was not yet driving.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image18.jpg"
+style="width:1.95508in;height:4.35in" />
+<figcaption><p><span id="_Toc244027283" class="anchor"></span>Figure 27:
+19 October 2026, 21:23: Arduino UNO with control
+jumpers.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image27.jpg"
+style="width:1.9575in;height:4.35in" />
+<figcaption><p><span id="_Toc244027284" class="anchor"></span>Figure 28:
+19 October 2026, 21:36: live YOLO tracking on an IP Webcam
+feed.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image28.jpg"
+style="width:6.1in;height:2.745in" />
+<figcaption><p><span id="_Toc244027285" class="anchor"></span>Figure 29:
+19 October 2026, 21:37: MissionPilot dashboard and host
+terminal.</p></figcaption>
+</figure>
+<p>The dry-fit placement on the chassis was done the same day. The
+Arduino, ESP32, and power bank were arranged on the top deck to check
+that they would fit and that the camera had a clear forward view. The
+layout was not final; it was a physical feasibility check. The
+photograph shows that the top deck was already crowded, which motivated
+the two-tier stack built the next day.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image29.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027286" class="anchor"></span>Figure 30:
+19 October 2026: dry-fit of the electronics on the chassis top
+deck.</p></figcaption>
+</figure>
+<h2 id="october-2026-the-two-tier-stack">6.5 20 October 2026: The
+Two-Tier Stack</h2>
+<p>The two-tier stack was assembled on 20 October. The lower tier holds
+the Arduino and the wiring; the upper tier holds the power bank and the
+ESP32. Separating the power bank from the logic boards reduced the
+mechanical load on the lower deck and made the camera height more
+usable. The side view shows the gap between the tiers, which allows air
+to circulate and keeps the buck converter away from the Arduino.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image30.jpg"
+style="width:6.1in;height:3.43294in" />
+<figcaption><p><span id="_Toc244027287" class="anchor"></span>Figure 31:
+20 October 2026: two-tier prototype, side view.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image31.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027288" class="anchor"></span>Figure 32:
+20 October 2026: two-tier prototype, top view.</p></figcaption>
+</figure>
+<p>The underside wiring was routed through the chassis slots on the same
+day. The goal was to keep the motor and battery leads away from the
+wheels and away from the signal wires. The photograph shows the first
+attempt at strain relief: the leads are taped to the plate, but the
+battery terminals are still exposed. That detail became important six
+days later.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image32.jpg"
+style="width:6.1in;height:3.43294in" />
+<figcaption><p><span id="_Toc244027289" class="anchor"></span>Figure 33:
+20 October 2026: underside wire routing through the chassis
+slots.</p></figcaption>
+</figure>
+<h2 id="october-2026-the-wi-fi-stream">6.6 22 October 2026: The Wi-Fi
+Stream</h2>
+<p>On 22 October, at 20:08, the ESP32-CAM was tested as a standalone
+access point. The phone connected to the `ESP32-CAM` network and opened
+`http://192.168.4.1:81/stream`. The first screenshot shows a normal
+indoor scene; the second shows the same scene in low light. The
+low-light test was important because the detector's performance depends
+on contrast, and the OV2640 has no infrared illumination.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image33.jpg"
+style="width:1.9575in;height:4.35in" />
+<figcaption><p><span id="_Toc244027290" class="anchor"></span>Figure 34:
+22 October 2026, 20:08:20: MJPEG stream viewed on a
+phone.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image34.jpg"
+style="width:1.9575in;height:4.35in" />
+<figcaption><p><span id="_Toc244027291" class="anchor"></span>Figure 35:
+22 October 2026, 20:08:48: low-light stream
+calibration.</p></figcaption>
+</figure>
+<p>The stream worked, but the test also revealed two practical issues.
+First, the camera board reset when the phone moved too far from the
+access point, which confirmed that the Wi-Fi link is a real failure mode
+and justified the host-side stale-frame check. Second, the image was
+noticeably darker at the edges, which is typical of the OV2640 lens and
+which the detector tolerates but does not fully compensate for.</p>
+<h2 id="october-2026-insulated-joints">6.7 23 October 2026: Insulated
+Joints</h2>
+<p>The motor harness was rebuilt on 23 October. The soldered terminals
+were wrapped with insulating tape, and the joints were pulled gently to
+check that they would not fail under vibration. This was a response to
+an earlier intermittent fault in which one motor would stop when the
+rover crossed a bump. The photograph shows the taped joints and the
+routing along the chassis edge.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image35.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027292" class="anchor"></span>Figure 36:
+23 October 2026: motor harness with insulated soldered
+joints.</p></figcaption>
+</figure>
+<h2 id="october-2026-driver-upgrade-and-the-short-circuit">6.8 26
+October 2026: Driver Upgrade and the Short Circuit</h2>
+<p>The TB6612FNG driver was photographed at 19:08 and 19:09 on 26
+October, before it was installed. The upgrade was planned because the
+L298N was running hot and dropping too much voltage. The TB6612FNG is
+smaller, cooler, and better suited to the rover's current draw. The
+pinout photograph was taken specifically so that the new wiring could be
+checked against the board markings rather than against memory.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image12.jpg"
+style="width:6.1in;height:2.74161in" />
+<figcaption><p><span id="_Toc244027293" class="anchor"></span>Figure 37:
+26 October 2026, 19:08:57: TB6612FNG before
+installation.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image13.jpg"
+style="width:6.1in;height:2.74161in" />
+<figcaption><p><span id="_Toc244027294" class="anchor"></span>Figure 38:
+26 October 2026, 19:09:04: TB6612FNG pinout reference.</p></figcaption>
+</figure>
+<p>At 20:14, during the power integration, the positive battery terminal
+touched the grounded chassis while the pack was connected. The contact
+produced a short circuit. The terminal lug and the compression spring
+were damaged, and a small number of components on the power path were
+affected. The rover was powered down immediately, the pack was removed,
+and the bench was cleared. Chapter 11 analyses the event in detail; here
+it is enough to record that the build stopped for the evening and that
+the recovery changed the power architecture.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image36.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027295" class="anchor"></span>Figure 39:
+26 October 2026, after 20:14: damaged battery terminal and spring after
+the short circuit.</p></figcaption>
+</figure>
+<p>The photograph of the damaged terminal is included deliberately. It
+is evidence of what went wrong, and it is the starting point for the
+corrective actions: heat-shrink over the lug, a fused positive lead, a
+strain-relieved battery holder, and a pre-power checklist. The incident
+did not end the project; it changed the project's standards.</p>
+<h2 id="build-summary">6.9 Build Summary</h2>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027325" class="anchor"></span>Table 10:
+Build stages, dates, evidence, and outcomes.</p></caption>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 32%" />
+<col style="width: 24%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Date</strong></th>
+<th style="text-align: center;"><strong>Stage</strong></th>
+<th style="text-align: center;"><strong>Evidence</strong></th>
+<th style="text-align: center;"><strong>Outcome</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3 Oct 2026</td>
+<td>HC-SR04 kit received</td>
+<td>Component photo</td>
+<td>Parts verified</td>
+</tr>
+<tr>
+<td>6 Oct 2026</td>
+<td>Chassis, motors, wheels, caster</td>
+<td>Assembly photos 01-04</td>
+<td style="text-align: center;">Rolling base</td>
+</tr>
+<tr>
+<td>9 Oct 2026</td>
+<td>Ultrasonic mount</td>
+<td>Assembly photos 05-06</td>
+<td>Forward sensor fixed</td>
+</tr>
+<tr>
+<td>19 Oct 2026</td>
+<td>Bench wiring, YOLO, dashboard</td>
+<td>Photos 07-08, telemetry</td>
+<td>First live detection</td>
+</tr>
+<tr>
+<td>20 Oct 2026</td>
+<td>Two-tier stack, underside routing</td>
+<td style="text-align: center;">Photos 09-11</td>
+<td>Electronics packaged</td>
+</tr>
+<tr>
+<td>22 Oct 2026</td>
+<td>ESP32-CAM Wi-Fi stream</td>
+<td>Phone screenshots</td>
+<td>Video link verified</td>
+</tr>
+<tr>
+<td>23 Oct 2026</td>
+<td>Insulated motor joints</td>
+<td style="text-align: center;">Photo 12</td>
+<td>Intermittent fault reduced</td>
+</tr>
+<tr>
+<td>26 Oct 2026</td>
+<td>TB6612FNG upgrade; short circuit</td>
+<td>Photos 13, driver photos</td>
+<td>Recovery and redesign</td>
+</tr>
+</tbody>
+</table>
+<p>CHAPTER 7</p>
+<h1 id="power-architecture-and-wiring">Power Architecture and
+Wiring</h1>
+<p>Power is the part of a small robot that is easiest to underestimate.
+A rover can appear to work on the bench and then reset violently the
+moment both motors start, because the motor current collapses the logic
+rail. The rover avoids this by keeping the motor rail and the logic rail
+separate, by using a switching buck converter for the logic, and by
+bringing every ground back to a single star point. This chapter explains
+the electrical chain and the reasoning behind each connection.</p>
+<h2 id="power-rails">7.1 Power Rails</h2>
+<p>There are two electrical domains on the rover. The high-current
+domain is the 2S battery rail, which ranges from about 6.0 V
+(discharged) to 8.4 V (fully charged) and feeds the motor driver
+directly. The low-current domain is the regulated 5 V rail, which feeds
+the Arduino, the ESP32-CAM, and the HC-SR04. The two domains share a
+common ground but not a common supply. This separation is the single
+most important electrical decision in the build.</p>
+<table>
+<caption><p><span id="_Toc244027326" class="anchor"></span>Table 11:
+Power rails, sources, loads, and protection.</p></caption>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 20%" />
+<col style="width: 10%" />
+<col style="width: 29%" />
+<col style="width: 24%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Rail</strong></th>
+<th style="text-align: center;"><strong>Source</strong></th>
+<th style="text-align: center;"><strong>Nominal</strong></th>
+<th style="text-align: center;"><strong>Loads</strong></th>
+<th style="text-align: center;"><strong>Protection</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VM (motor)</td>
+<td style="text-align: center;">2S 18650 pack</td>
+<td style="text-align: center;">7.4 V</td>
+<td>TB6612FNG VM, motors</td>
+<td>3 A inline fuse, switch</td>
+</tr>
+<tr>
+<td>5 V (logic)</td>
+<td style="text-align: center;">LM2596 buck</td>
+<td style="text-align: center;">5.0 V</td>
+<td>Arduino, ESP32-CAM, HC-SR04</td>
+<td>Buck current limit, decoupling</td>
+</tr>
+<tr>
+<td>3.3 V (camera)</td>
+<td style="text-align: center;">ESP32-CAM onboard LDO</td>
+<td style="text-align: center;">3.3 V</td>
+<td>OV2640, ESP32 core</td>
+<td>Onboard regulator</td>
+</tr>
+<tr>
+<td>GND</td>
+<td style="text-align: center;">Star junction</td>
+<td style="text-align: center;">0 V</td>
+<td style="text-align: center;">All modules</td>
+<td>Single-point return</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image37.png"
+style="width:6.1in;height:3.99273in" />
+<figcaption><p><span id="_Toc244027296" class="anchor"></span>Figure 40:
+Power distribution from the 2S pack to the motor and logic
+rails.</p></figcaption>
+</figure>
+<h2 id="why-a-star-ground">7.2 Why a Star Ground</h2>
+<p>A star ground is a wiring topology in which every module's ground
+returns to one physical point rather than daisy-chaining through other
+modules. The reason is current. The motor return current can be several
+hundred milliamps, and the resistance of a long jumper wire is not zero.
+If the Arduino ground is connected downstream of the motor ground, the
+motor current produces a small voltage drop in the shared wire, and the
+Arduino sees a ground that is not at 0 V. That offset can corrupt analog
+readings, cause serial errors, or reset the board.</p>
+<p>The rover uses a single star point on the lower chassis plate. The
+battery negative, the buck converter input and output grounds, the
+Arduino ground, the ESP32 ground, the HC-SR04 ground, and the motor
+driver ground all meet there. The star point is a physical terminal, not
+a loose twist of wires. This makes the ground inspectable and makes it
+obvious if a connection has come loose.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Ground rule</strong></p>
+<p>Every ground returns to one star point. Never daisy-chain the Arduino
+ground through the motor driver. A shared ground wire carrying motor
+current will lift the logic ground and cause resets that look like
+software bugs.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="fusing-and-switching">7.3 Fusing and Switching</h2>
+<p>The positive battery lead passes through a 3 A inline fuse before the
+rocker switch. The fuse is sized above the normal operating current but
+below the current that the battery and wiring can safely deliver into a
+short. The switch isolates the entire system for assembly and for
+emergencies. The fuse holder is deliberately placed close to the battery
+so that the unprotected length of positive conductor is as short as
+possible.</p>
+<p>The short-circuit incident showed why the physical arrangement
+matters as much as the schematic. A fuse that is present but bypassed by
+a loose terminal does not protect anything. The corrective action
+therefore combined the fuse with an insulated terminal, a
+strain-relieved holder, and a pre-power checklist. Protection is a
+system, not a single component.</p>
+<h2 id="power-budget">7.4 Power Budget</h2>
+<p>The following budget is a design estimate. It uses typical rather
+than worst-case currents, because the rover is intended for intermittent
+indoor operation. The measured runtime has not yet been recorded on the
+final build; it is marked [PENDING] and is a task for the next test
+campaign.</p>
+<table style="width:100%;">
+<caption><p><span id="_Toc244027327" class="anchor"></span>Table 12:
+Design power budget for the 5 V and motor rails [DESIGN].</p></caption>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 16%" />
+<col style="width: 10%" />
+<col style="width: 11%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Load</strong></th>
+<th style="text-align: center;"><strong>Typical current</strong></th>
+<th style="text-align: center;"><strong>Duty</strong></th>
+<th style="text-align: center;"><strong>Average</strong></th>
+<th style="text-align: center;"><strong>Notes</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Left TT motor</td>
+<td style="text-align: center;">0.25 A</td>
+<td style="text-align: center;">60%</td>
+<td style="text-align: center;">0.15 A</td>
+<td>Higher during turns and stalls</td>
+</tr>
+<tr>
+<td>Right TT motor</td>
+<td style="text-align: center;">0.25 A</td>
+<td style="text-align: center;">60%</td>
+<td style="text-align: center;">0.15 A</td>
+<td>Higher during turns and stalls</td>
+</tr>
+<tr>
+<td>Arduino UNO</td>
+<td style="text-align: center;">0.05 A</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">0.05 A</td>
+<td>Logic only, no motor load</td>
+</tr>
+<tr>
+<td>ESP32-CAM</td>
+<td style="text-align: center;">0.18 A</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">0.18 A</td>
+<td>Peak higher during Wi-Fi transmit</td>
+</tr>
+<tr>
+<td>HC-SR04</td>
+<td style="text-align: center;">0.015 A</td>
+<td style="text-align: center;">10%</td>
+<td style="text-align: center;">0.002 A</td>
+<td>Pulsed measurement</td>
+</tr>
+<tr>
+<td>TB6612FNG logic</td>
+<td style="text-align: center;">0.01 A</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">0.01 A</td>
+<td style="text-align: center;">VCC only</td>
+</tr>
+</tbody>
+</table>
+<p>The 5 V load is dominated by the ESP32-CAM, which draws a burst of
+current during Wi-Fi transmission. The LM2596 must be able to supply
+that burst without dropping the rail below the Arduino's brownout
+threshold. A 1000 uF electrolytic capacitor across the 5 V rail near the
+ESP32 is recommended as a reservoir for the transmit bursts. The motor
+rail is dominated by the two TT motors, whose stall current is much
+higher than their running current; the fuse and the driver's current
+rating must be chosen for the stall case, not the running case.</p>
+<h2 id="wiring-schedule">7.5 Wiring Schedule</h2>
+<p>The baseline wiring schedule follows the L298N pin map used in the
+original firmware. The final TB6612FNG adapter keeps the same Arduino
+control pins but renames the signals and adds a standby connection. The
+full pin map is given in Appendix B. The important point is that the pin
+functions were verified against the firmware, not copied from a generic
+tutorial.</p>
+<table>
+<caption><p><span id="_Toc244027328" class="anchor"></span>Table 13:
+Arduino control pins for the baseline and final motor
+drivers.</p></caption>
+<colgroup>
+<col style="width: 15%" />
+<col style="width: 21%" />
+<col style="width: 21%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Arduino pin</strong></th>
+<th style="text-align: center;"><strong>L298N baseline</strong></th>
+<th style="text-align: center;"><strong>TB6612FNG final</strong></th>
+<th style="text-align: center;"><strong>Function</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D5</td>
+<td style="text-align: center;">ENA</td>
+<td style="text-align: center;">PWMA</td>
+<td>Left motor speed</td>
+</tr>
+<tr>
+<td>D6</td>
+<td style="text-align: center;">IN1</td>
+<td style="text-align: center;">AIN1</td>
+<td>Left motor direction</td>
+</tr>
+<tr>
+<td>D7</td>
+<td style="text-align: center;">IN2</td>
+<td style="text-align: center;">AIN2</td>
+<td>Left motor direction</td>
+</tr>
+<tr>
+<td>D8</td>
+<td style="text-align: center;">IN3</td>
+<td style="text-align: center;">BIN1</td>
+<td>Right motor direction</td>
+</tr>
+<tr>
+<td>D9</td>
+<td style="text-align: center;">IN4</td>
+<td style="text-align: center;">BIN2</td>
+<td>Right motor direction</td>
+</tr>
+<tr>
+<td>D10</td>
+<td style="text-align: center;">ENB</td>
+<td style="text-align: center;">PWMB</td>
+<td>Right motor speed</td>
+</tr>
+<tr>
+<td>D11</td>
+<td style="text-align: center;">TRIG</td>
+<td style="text-align: center;">TRIG</td>
+<td>Ultrasonic trigger</td>
+</tr>
+<tr>
+<td>D12</td>
+<td style="text-align: center;">ECHO</td>
+<td style="text-align: center;">ECHO</td>
+<td>Ultrasonic echo</td>
+</tr>
+<tr>
+<td>5V</td>
+<td style="text-align: center;">Logic supply</td>
+<td style="text-align: center;">VCC + STBY</td>
+<td>Driver logic and enable</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image38.png"
+style="width:5.41784in;height:4.35in" />
+<figcaption><p><span id="_Toc244027297" class="anchor"></span>Figure 41:
+Detailed wiring diagram for the rover harness.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image39.png"
+style="width:6.1in;height:4.08145in" />
+<figcaption><p><span id="_Toc244027298" class="anchor"></span>Figure 42:
+Schematic-level circuit diagram of the rover
+electronics.</p></figcaption>
+</figure>
+<h2 id="connector-and-harness-practice">7.6 Connector and Harness
+Practice</h2>
+<p>The harness uses Dupont connectors for logic signals and soldered
+joints for motor and battery leads. Dupont connectors are convenient but
+they pull loose under vibration, so every logic connector is either
+taped or routed so that it cannot be pulled by a wheel. Soldered joints
+are covered with heat-shrink or insulating tape. The battery terminal is
+the most critical joint in the system: it carries the full pack current
+and it is the one that failed during the incident.</p>
+<ul>
+<li><p>Keep the positive battery lead as short as practical and fuse it
+near the pack.</p></li>
+<li><p>Strain-relieve every wire that crosses a moving part.</p></li>
+<li><p>Separate motor leads from signal leads; cross at right angles
+when unavoidable.</p></li>
+<li><p>Label both ends of every non-obvious wire before it disappears
+into the chassis.</p></li>
+<li><p>Photograph the harness before closing the deck; the photograph is
+the maintenance manual.</p></li>
+</ul>
+<p>CHAPTER 8</p>
+<h1 id="software-and-ai-pipeline">Software and AI Pipeline</h1>
+<p>The software is split along the same three tiers as the hardware. The
+ESP32-CAM runs a small camera firmware. The laptop runs the perception,
+decision, dashboard, and logging stack. The Arduino runs a compact
+safety and motor firmware. The interfaces between them are deliberately
+narrow: MJPEG over Wi-Fi and one-character commands over USB serial.
+Narrow interfaces are easier to test and easier to reason about when
+something fails.</p>
+<h2 id="host-software-architecture">8.1 Host Software Architecture</h2>
+<p>The host is a Python application organised into layers. The capture
+layer pulls frames from the ESP32 stream or from a file. The perception
+layer runs the detector and returns bounding boxes. The decision layer
+converts the selected box into a command. The safety layer checks
+confidence, distance, and link health before the command is sent. The
+transport layer writes the command to the serial port. The presentation
+layer draws the dashboard and writes the event log.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image40.png"
+style="width:5.12862in;height:4.35in" />
+<figcaption><p><span id="_Toc244027299" class="anchor"></span>Figure 43:
+ESP32-CAM capture and streaming pipeline.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image41.png"
+style="width:6.1in;height:3.69882in" />
+<figcaption><p><span id="_Toc244027300" class="anchor"></span>Figure 44:
+Host decision pipeline from frame to command.</p></figcaption>
+</figure>
+<p>The layers communicate through plain data structures rather than
+through shared mutable state. A frame becomes a detection result; a
+detection result becomes a decision; a decision becomes a serial
+command. This makes it possible to replay a recorded session through the
+decision and safety layers without a camera, which is how most of the
+regression tests are run.</p>
+<h2 id="detection-model">8.2 Detection Model</h2>
+<p>The detector is a YOLO11s model fine-tuned for the target class used
+in the demonstration. The model was selected after a comparison of five
+candidates on the same 128-image COCO128 evaluation set. The comparison
+is reported in Chapter 10. The model runs at a 320-pixel inference size,
+which is a compromise between accuracy and latency on the 2-core,
+4-thread host CPU.</p>
+<p>The detector returns boxes with class labels and confidence scores.
+The decision layer keeps the highest-confidence box for the configured
+target class and discards boxes below a confidence threshold. A temporal
+filter requires the target to be present for a small number of
+consecutive frames before the rover is allowed to move, which reduces
+spurious starts caused by a single false positive.</p>
+<table style="width:94%;">
+<caption><p><span id="_Toc244027329" class="anchor"></span>Table 14:
+Detector and decision parameters.</p></caption>
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 20%" />
+<col style="width: 49%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Parameter</strong></th>
+<th style="text-align: center;"><strong>Value</strong></th>
+<th style="text-align: center;"><strong>Reason</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Input size</td>
+<td style="text-align: center;">320 x 320</td>
+<td>Meets the 1 s refresh budget on the host CPU</td>
+</tr>
+<tr>
+<td>Confidence threshold</td>
+<td style="text-align: center;">0.25</td>
+<td>Balances recall and false positives</td>
+</tr>
+<tr>
+<td>Target class</td>
+<td style="text-align: center;">Configured per run</td>
+<td>Single-target demonstration</td>
+</tr>
+<tr>
+<td>Temporal gate</td>
+<td style="text-align: center;">3 consecutive frames</td>
+<td>Rejects isolated false positives</td>
+</tr>
+<tr>
+<td>Colour space</td>
+<td style="text-align: center;">BGR (OpenCV default)</td>
+<td>Matches the training pipeline</td>
+</tr>
+<tr>
+<td>NMS IoU</td>
+<td style="text-align: center;">0.45</td>
+<td>Standard post-processing value</td>
+</tr>
+</tbody>
+</table>
+<h2 id="decision-engine">8.3 Decision Engine</h2>
+<p>The decision engine is intentionally simple. It computes the
+horizontal offset between the target box centre and the frame centre,
+normalises the offset by the frame width, and compares it with two
+thresholds. If the offset is within the centre deadband, the command is
+FORWARD. If the target is to the left, the command is LEFT. If it is to
+the right, the command is RIGHT. If no target is present, the command is
+STOP.</p>
+<p>The deadband is the most important tuning parameter. A narrow
+deadband makes the rover track aggressively but oscillate when the
+detector jitters. A wide deadband makes the rover stable but slow to
+correct. The chosen value is a compromise, and it is stored in
+configuration rather than hard-coded so that it can be adjusted without
+editing the application logic.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image42.png"
+style="width:6.1in;height:3.69882in" />
+<figcaption><p><span id="_Toc244027301" class="anchor"></span>Figure 45:
+Target position and horizontal error used by the decision
+engine.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image4.png"
+style="width:6.1in;height:3.69882in" />
+<figcaption><p><span id="_Toc244027302" class="anchor"></span>Figure 46:
+Left, centre, and right zones with the centre deadband.</p></figcaption>
+</figure>
+<h2 id="communication-protocol">8.4 Communication Protocol</h2>
+<p>The host-to-Arduino protocol is deliberately minimal. The host sends
+one ASCII character per command: `F` for forward, `B` for backward, `L`
+for left, `R` for right, and `S` for stop. The Arduino replies with a
+short status line. Unknown characters produce `STATUS:ERROR` and do not
+actuate the motors. The protocol is small enough to be implemented
+correctly on an 8-bit microcontroller and simple enough to be inspected
+on a serial terminal.</p>
+<table>
+<caption><p><span id="_Toc244027330" class="anchor"></span>Table 15:
+Serial command and telemetry protocol.</p></caption>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 19%" />
+<col style="width: 26%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Direction</strong></th>
+<th style="text-align: center;"><strong>Byte</strong></th>
+<th style="text-align: center;"><strong>Meaning</strong></th>
+<th style="text-align: center;"><strong>Arduino response</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host to rover</td>
+<td style="text-align: center;">F</td>
+<td style="text-align: center;">Forward</td>
+<td style="text-align: center;">STATUS:OK,F</td>
+</tr>
+<tr>
+<td>Host to rover</td>
+<td style="text-align: center;">B</td>
+<td style="text-align: center;">Backward</td>
+<td style="text-align: center;">STATUS:OK,B</td>
+</tr>
+<tr>
+<td>Host to rover</td>
+<td style="text-align: center;">L</td>
+<td style="text-align: center;">Turn left</td>
+<td style="text-align: center;">STATUS:OK,L</td>
+</tr>
+<tr>
+<td>Host to rover</td>
+<td style="text-align: center;">R</td>
+<td style="text-align: center;">Turn right</td>
+<td style="text-align: center;">STATUS:OK,R</td>
+</tr>
+<tr>
+<td>Host to rover</td>
+<td style="text-align: center;">S</td>
+<td style="text-align: center;">Stop</td>
+<td style="text-align: center;">STATUS:OK,S</td>
+</tr>
+<tr>
+<td>Host to rover</td>
+<td style="text-align: center;">?</td>
+<td style="text-align: center;">Query status</td>
+<td style="text-align: center;">STATUS:&lt;state&gt;,D:&lt;cm&gt;</td>
+</tr>
+<tr>
+<td>Rover to host</td>
+<td style="text-align: center;">TICKS:&lt;l&gt;,&lt;r&gt;</td>
+<td style="text-align: center;">Encoder telemetry</td>
+<td style="text-align: center;">Sent periodically</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image43.png"
+style="width:6.1in;height:3.58514in" />
+<figcaption><p><span id="_Toc244027303" class="anchor"></span>Figure 47:
+Host-to-Arduino communication protocol and state
+transitions.</p></figcaption>
+</figure>
+<h2 id="esp32-cam-firmware">8.5 ESP32-CAM Firmware</h2>
+<p>The ESP32-CAM firmware configures the OV2640, starts a Wi-Fi access
+point or joins an existing network, and serves the MJPEG stream on port
+81. It also exposes a small control endpoint for changing resolution and
+frame quality. The firmware is kept minimal on purpose: every additional
+feature is another way for the camera to fail, and the camera is the
+least reliable part of the system.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image44.jpg"
+style="width:3.2625in;height:4.35in" />
+<figcaption><p><span id="_Toc244027304" class="anchor"></span>Figure 48:
+Flashing the ESP32-CAM firmware with esptool.</p></figcaption>
+</figure>
+<p>The camera board has no USB-serial bridge, so flashing requires
+either a programming baseboard or a manual jumper sequence that pulls
+GPIO0 low at reset. The baseboard is the safer option because it exposes
+the correct pins and avoids accidental shorts. The firmware is flashed
+at 115200 baud and verified by opening the stream in a browser before
+the board is installed on the rover.</p>
+<h2 id="arduino-firmware">8.6 Arduino Firmware</h2>
+<p>The Arduino firmware is a small finite-state machine. It reads the
+serial port, validates the command, reads the ultrasonic sensor, checks
+the watchdog, and drives the motor driver. The loop is non-blocking: the
+ultrasonic measurement uses a timeout rather than a long delay, and the
+serial read returns immediately when no byte is available. This keeps
+the watchdog responsive even when the sensor is not returning an
+echo.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image45.png"
+style="width:6.1in;height:3.96223in" />
+<figcaption><p><span id="_Toc244027305" class="anchor"></span>Figure 49:
+Arduino safety and motor-control pipeline.</p></figcaption>
+</figure>
+<p>The firmware treats every input as untrusted. A command is accepted
+only if it is one of the five valid characters. A distance is accepted
+only if it is within the sensor's usable range. A communication link is
+considered alive only if a valid command has arrived within the last 3
+seconds. If any check fails, the motors are stopped and the driver is
+disabled.</p>
+<h2 id="logging-and-reproducibility">8.7 Logging and
+Reproducibility</h2>
+<p>Every run writes a CSV event log with the timestamp, frame index,
+detection count, selected class, confidence, bounding-box centre,
+distance, command, safety state, and inference time. The log is the
+basis for the evaluation in Chapter 10. It also makes it possible to
+replay a run through the decision layer and confirm that the same inputs
+produce the same outputs.</p>
+<p>Configuration is stored in YAML rather than in code. The camera URL,
+model path, confidence threshold, deadband, serial port, and safety
+limits are all configurable. This matters for reproducibility: a test
+can be repeated with the exact configuration that produced the recorded
+result, and a change can be reviewed as a diff rather than as an
+unexplained edit.</p>
+<p>CHAPTER 9</p>
+<h1 id="control-law-and-safety-architecture">Control Law and Safety
+Architecture</h1>
+<p>The control law turns a bounding box into wheel motion. The safety
+architecture decides whether that motion is allowed. The two are
+deliberately separated: the control law may be tuned for smooth
+tracking, while the safety layer applies hard limits that no tuning can
+override. This chapter describes both, and it records the failure modes
+that the design is intended to survive.</p>
+<h2 id="differential-drive-kinematics">9.1 Differential-Drive
+Kinematics</h2>
+<p>For a differential-drive robot with wheel radius r, wheelbase L, and
+wheel angular speeds omega_L and omega_R, the linear velocity is v =
+r(omega_L + omega_R)/2 and the yaw rate is omega = r(omega_R -
+omega_L)/L. The rover does not measure wheel speed directly in the
+baseline build, so the firmware approximates the commanded velocity with
+a PWM duty cycle. The approximation is adequate for a low-speed
+demonstrator, but it is not a substitute for encoders.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image3.png"
+style="width:5.78947in;height:4.35in" />
+<figcaption><p><span id="_Toc244027306" class="anchor"></span>Figure 50:
+Differential-drive geometry used by the control law.</p></figcaption>
+</figure>
+<p>The kinematic model explains why the rover turns in place when the
+wheels are driven in opposite directions and why it moves straight when
+they are driven at equal speeds. It also explains the main mechanical
+weakness: if the two motors are not matched, the rover curves even when
+the commanded speeds are equal. The visual feedback loop compensates for
+this by adjusting the command based on the observed target position.</p>
+<h2 id="steering-law">9.2 Steering Law</h2>
+<p>The steering law is a proportional controller with a deadband. The
+error e is the normalised horizontal offset between the target centre
+and the frame centre. The command is LEFT when e is below the negative
+threshold, RIGHT when e is above the positive threshold, and FORWARD
+when e lies inside the deadband. The output is discrete because the
+serial protocol uses single characters, but the underlying control idea
+is continuous.</p>
+<p>A proportional gain Kp scales the turn intensity. A high gain
+produces a fast response but can overshoot and oscillate; a low gain is
+stable but sluggish. The comparison in the figure below shows the
+trade-off for three gains. The selected gain is the middle value, which
+settles without sustained oscillation on the bench.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image46.png"
+style="width:5.4375in;height:4.35in" />
+<figcaption><p><span id="_Toc244027307" class="anchor"></span>Figure 51:
+Step response for three proportional gains; the middle gain was selected
+for the rover.</p></figcaption>
+</figure>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image47.png"
+style="width:6.1in;height:3.10823in" />
+<figcaption><p><span id="_Toc244027308" class="anchor"></span>Figure 52:
+Closed-loop control from image error to wheel command.</p></figcaption>
+</figure>
+<h2 id="finite-state-machine">9.3 Finite-State Machine</h2>
+<p>The rover's behaviour is organised as a finite-state machine with
+five states: IDLE, SEARCH, TRACK, AVOID, and STOP. The machine starts in
+IDLE, enters SEARCH when a mission begins, enters TRACK when a target is
+confirmed, enters AVOID when the ultrasonic sensor reports a close
+obstacle, and enters STOP on a communication loss, a camera failure, or
+an explicit stop command. STOP is the only state that disables the motor
+driver.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image48.png"
+style="width:6.1in;height:4.28941in" />
+<figcaption><p><span id="_Toc244027309" class="anchor"></span>Figure 53:
+Rover finite-state machine and transition conditions.</p></figcaption>
+</figure>
+<table>
+<caption><p><span id="_Toc244027331" class="anchor"></span>Table 16:
+Finite-state machine states and transitions.</p></caption>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 31%" />
+<col style="width: 26%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>State</strong></th>
+<th style="text-align: center;"><strong>Entry condition</strong></th>
+<th style="text-align: center;"><strong>Allowed motion</strong></th>
+<th style="text-align: center;"><strong>Exit condition</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IDLE</td>
+<td>Power-on or mission end</td>
+<td style="text-align: center;">None</td>
+<td style="text-align: center;">Mission start</td>
+</tr>
+<tr>
+<td>SEARCH</td>
+<td>No target visible</td>
+<td style="text-align: center;">Rotate or scan</td>
+<td style="text-align: center;">Target confirmed</td>
+</tr>
+<tr>
+<td>TRACK</td>
+<td>Target confirmed</td>
+<td style="text-align: center;">Forward, left, right</td>
+<td style="text-align: center;">Target lost or obstacle</td>
+</tr>
+<tr>
+<td>AVOID</td>
+<td>Distance &lt; 15 cm</td>
+<td style="text-align: center;">Stop, then turn</td>
+<td style="text-align: center;">Path clear</td>
+</tr>
+<tr>
+<td>STOP</td>
+<td>Link loss, camera fault, or explicit stop</td>
+<td style="text-align: center;">None</td>
+<td style="text-align: center;">Operator reset</td>
+</tr>
+</tbody>
+</table>
+<h2 id="safety-hierarchy">9.4 Safety Hierarchy</h2>
+<p>Safety is implemented as a hierarchy of checks, each with the
+authority to stop the rover. The first check is in the host: if the
+camera frame is stale, the host sends STOP. The second check is in the
+serial transport: if the Arduino does not receive a valid command within
+3 seconds, it stops the motors. The third check is in the Arduino loop:
+if the ultrasonic distance is below 15 cm, forward motion is refused.
+The fourth check is electrical: if the Arduino loses power, the motor
+driver's standby pin goes low and the outputs are disabled.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image49.png"
+style="width:6.1in;height:4.28941in" />
+<figcaption><p><span id="_Toc244027310" class="anchor"></span>Figure 54:
+Layered safety hierarchy from host checks to electrical
+disable.</p></figcaption>
+</figure>
+<table>
+<caption><p><span id="_Toc244027332" class="anchor"></span>Table 17:
+Safety layers, thresholds, actions, and supporting
+evidence.</p></caption>
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 21%" />
+<col style="width: 15%" />
+<col style="width: 24%" />
+<col style="width: 24%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Layer</strong></th>
+<th style="text-align: center;"><strong>Check</strong></th>
+<th style="text-align: center;"><strong>Threshold</strong></th>
+<th style="text-align: center;"><strong>Action</strong></th>
+<th style="text-align: center;"><strong>Evidence</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host</td>
+<td style="text-align: center;">Frame age</td>
+<td style="text-align: center;">&gt; 1.0 s</td>
+<td style="text-align: center;">Send STOP</td>
+<td>Stale-frame test</td>
+</tr>
+<tr>
+<td>Serial</td>
+<td style="text-align: center;">Command age</td>
+<td style="text-align: center;">&gt; 3.0 s</td>
+<td style="text-align: center;">Stop motors</td>
+<td style="text-align: center;">Watchdog test</td>
+</tr>
+<tr>
+<td>Arduino</td>
+<td style="text-align: center;">Forward distance</td>
+<td style="text-align: center;">&lt; 15 cm</td>
+<td style="text-align: center;">Refuse forward</td>
+<td style="text-align: center;">Obstacle test</td>
+</tr>
+<tr>
+<td>Arduino</td>
+<td style="text-align: center;">Command validity</td>
+<td style="text-align: center;">Not F/B/L/R/S</td>
+<td style="text-align: center;">STATUS:ERROR</td>
+<td style="text-align: center;">Protocol test</td>
+</tr>
+<tr>
+<td>Electrical</td>
+<td style="text-align: center;">Driver enable</td>
+<td style="text-align: center;">STBY low</td>
+<td style="text-align: center;">Outputs disabled</td>
+<td style="text-align: center;">Bench check</td>
+</tr>
+</tbody>
+</table>
+<h2 id="watchdog-design">9.5 Watchdog Design</h2>
+<p>The watchdog is a software timer in the Arduino firmware. Every valid
+command resets the timer. If the timer reaches 3 seconds, the firmware
+calls the stop routine, sets the state to STOP, and disables the motor
+driver. The watchdog is not a hardware watchdog timer; it is a
+communication timeout. It protects against a dead host, a pulled USB
+cable, or a serial driver that has stopped writing. It does not protect
+against a firmware hang, which is why the loop is kept short and
+non-blocking.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>The safe state is STOP</strong></p>
+<p>Silence must never mean “keep driving”. If the host stops sending,
+the Arduino stops the motors after 3 seconds. If the camera stops
+streaming, the host sends STOP. If the Arduino loses power, the driver
+is disabled. Every failure path converges on the same safe
+state.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="failure-mode-and-effects-analysis">9.6 Failure Mode and Effects
+Analysis</h2>
+<p>The FMEA below was written before the short-circuit incident and
+revised afterwards. It lists the failure modes that the design is
+intended to handle, their effects, and the mitigation. The incident
+added the battery-terminal row and raised the severity of the power-path
+rows.</p>
+<table>
+<caption><p><span id="_Toc244027333" class="anchor"></span>Table 18:
+Failure mode and effects analysis for the rover.</p></caption>
+<colgroup>
+<col style="width: 27%" />
+<col style="width: 22%" />
+<col style="width: 10%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Failure mode</strong></th>
+<th style="text-align: center;"><strong>Effect</strong></th>
+<th style="text-align: center;"><strong>Severity</strong></th>
+<th style="text-align: center;"><strong>Mitigation</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wi-Fi link drops</td>
+<td style="text-align: center;">No new frames</td>
+<td style="text-align: center;">High</td>
+<td>Host stale-frame check; Arduino watchdog</td>
+</tr>
+<tr>
+<td>USB cable pulled</td>
+<td style="text-align: center;">No new commands</td>
+<td style="text-align: center;">High</td>
+<td>3 s watchdog stops motors</td>
+</tr>
+<tr>
+<td>Camera board resets</td>
+<td style="text-align: center;">Stream stops</td>
+<td style="text-align: center;">Medium</td>
+<td>Host reconnects or sends STOP</td>
+</tr>
+<tr>
+<td>Ultrasonic misses obstacle</td>
+<td style="text-align: center;">Possible collision</td>
+<td style="text-align: center;">High</td>
+<td>Low speed; visual stop; operator supervision</td>
+</tr>
+<tr>
+<td>Motor stall</td>
+<td style="text-align: center;">High current, heat</td>
+<td style="text-align: center;">Medium</td>
+<td>Fuse; driver current limit; current sensing (future)</td>
+</tr>
+<tr>
+<td>Battery terminal touches chassis</td>
+<td style="text-align: center;">Short circuit, damaged parts</td>
+<td style="text-align: center;">Critical</td>
+<td>Insulated lug; fuse; strain relief; checklist</td>
+</tr>
+<tr>
+<td>Buck mis-set</td>
+<td style="text-align: center;">Overvoltage on logic</td>
+<td style="text-align: center;">Critical</td>
+<td>Set to 5.0 V before connection; verify with meter</td>
+</tr>
+<tr>
+<td>Arduino firmware hang</td>
+<td style="text-align: center;">Motors may keep last command</td>
+<td style="text-align: center;">High</td>
+<td>Non-blocking loop; hardware watchdog (future)</td>
+</tr>
+<tr>
+<td>Driver overheating</td>
+<td style="text-align: center;">Thermal shutdown</td>
+<td style="text-align: center;">Medium</td>
+<td>TB6612FNG upgrade; current margin</td>
+</tr>
+</tbody>
+</table>
+<h2 id="test-plan">9.7 Test Plan</h2>
+<p>The test plan follows a pyramid. At the base are unit tests for the
+decision, safety, and protocol logic. In the middle are integration
+tests that feed recorded frames and synthetic sensor values through the
+host stack. At the top are end-to-end tests that run the firmware in
+simulation and, where possible, on the physical rover. The measured
+results are reported in Chapter 10.</p>
+<ul>
+<li><p>Unit: threshold boundaries, deadband edges, command parsing,
+watchdog expiry, distance validation, and log schema.</p></li>
+<li><p>Integration: recorded frame sequences replayed through the
+detector, decision engine, and serial transport with a mock
+Arduino.</p></li>
+<li><p>Simulation: Wokwi runs of the Arduino firmware with synthetic
+ultrasonic distances and serial commands.</p></li>
+<li><p>Hardware: continuity, voltage, motor direction, obstacle stop,
+and link-loss stop.</p></li>
+<li><p>Regression: the full suite is run before every commit that
+touches the decision or safety layers.</p></li>
+</ul>
+<p>CHAPTER 10</p>
+<h1 id="testing-and-measured-results">Testing and Measured Results</h1>
+<p>This chapter reports what was measured, not what was hoped for. The
+evidence comes from the test suite, the static analyzer, the firmware
+builds, the Wokwi simulator, the detector benchmark logs, and the
+event-log evaluation. Where a measurement is missing, the gap is stated
+explicitly rather than filled with an estimate.</p>
+<h2 id="verification-summary">10.1 Verification Summary</h2>
+<table style="width:94%;">
+<caption><p><span id="_Toc244027334" class="anchor"></span>Table 19:
+Verification summary for the final build.</p></caption>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 26%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Check</strong></th>
+<th style="text-align: center;"><strong>Result</strong></th>
+<th style="text-align: center;"><strong>Evidence</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python test suite</td>
+<td>311 passing tests</td>
+<td style="text-align: center;">pytest report</td>
+</tr>
+<tr>
+<td>Static analysis</td>
+<td>No errors or warnings</td>
+<td style="text-align: center;">ruff / mypy logs</td>
+</tr>
+<tr>
+<td>Arduino firmware build</td>
+<td>Compiles successfully</td>
+<td style="text-align: center;">arduino-cli build</td>
+</tr>
+<tr>
+<td>ESP32 firmware build</td>
+<td>Compiles successfully</td>
+<td style="text-align: center;">arduino-cli / PlatformIO</td>
+</tr>
+<tr>
+<td>Wokwi simulation</td>
+<td>3 runs completed</td>
+<td style="text-align: center;">Simulation logs</td>
+</tr>
+<tr>
+<td>Detector evaluation</td>
+<td>128 images, 929 objects</td>
+<td style="text-align: center;">COCO128 benchmark JSON</td>
+</tr>
+<tr>
+<td>Event-log evaluation</td>
+<td>9,118 rows, 17 runs</td>
+<td style="text-align: center;">logs/eval.json</td>
+</tr>
+<tr>
+<td>Safety invariant check</td>
+<td style="text-align: center;">0 violations</td>
+<td style="text-align: center;">logs/eval.json</td>
+</tr>
+</tbody>
+</table>
+<p>The 311 passing tests cover the host stack, not the physical rover.
+They are strong evidence that the decision and safety logic behaves as
+specified on recorded inputs. They are not evidence that the rover never
+collides; that requires hardware testing, which is reported separately
+and is still incomplete for the final TB6612FNG build.</p>
+<h2 id="detector-benchmark">10.2 Detector Benchmark</h2>
+<p>Five detectors were evaluated on the same 128-image COCO128 subset,
+which contains 929 annotated objects. All models used the same
+confidence threshold (0.25) and the same IoU threshold (0.5). The
+results show the expected accuracy-versus-latency trade-off:
+RT-DETRv2-R18 achieved the highest recall and mAP but was far too slow
+for closed-loop control, while the YOLO models were faster but less
+accurate.</p>
+<table style="width:98%;">
+<caption><p><span id="_Toc244027335" class="anchor"></span>Table 20:
+Detector comparison on COCO128 at 320-pixel input
+[MEASURED].</p></caption>
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 15%" />
+<col style="width: 14%" />
+<col style="width: 12%" />
+<col style="width: 14%" />
+<col style="width: 18%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Model</strong></th>
+<th style="text-align: center;"><strong>Precision</strong></th>
+<th style="text-align: center;"><strong>Recall</strong></th>
+<th style="text-align: center;"><strong>F1</strong></th>
+<th style="text-align: center;"><strong>mAP@0.5</strong></th>
+<th style="text-align: center;"><strong>Median latency</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>YOLO11n</td>
+<td style="text-align: center;">0.805</td>
+<td style="text-align: center;">0.342</td>
+<td style="text-align: center;">0.480</td>
+<td style="text-align: center;">0.516</td>
+<td style="text-align: center;">124 ms</td>
+</tr>
+<tr>
+<td>YOLO11s</td>
+<td style="text-align: center;">0.813</td>
+<td style="text-align: center;">0.477</td>
+<td style="text-align: center;">0.601</td>
+<td style="text-align: center;">0.640</td>
+<td style="text-align: center;">534 ms</td>
+</tr>
+<tr>
+<td>YOLO26n</td>
+<td style="text-align: center;">0.829</td>
+<td style="text-align: center;">0.354</td>
+<td style="text-align: center;">0.496</td>
+<td style="text-align: center;">0.523</td>
+<td style="text-align: center;">126 ms</td>
+</tr>
+<tr>
+<td>YOLO26s</td>
+<td style="text-align: center;">0.787</td>
+<td style="text-align: center;">0.473</td>
+<td style="text-align: center;">0.591</td>
+<td style="text-align: center;">0.594</td>
+<td style="text-align: center;">452 ms</td>
+</tr>
+<tr>
+<td>RT-DETRv2-R18</td>
+<td style="text-align: center;">0.283</td>
+<td style="text-align: center;">0.883</td>
+<td style="text-align: center;">0.428</td>
+<td style="text-align: center;">0.815</td>
+<td style="text-align: center;">3,427 ms</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image50.png"
+style="width:6.1in;height:2.52886in" />
+<figcaption><p><span id="_Toc244027311" class="anchor"></span>Figure 55:
+Detector recall and median latency comparison.</p></figcaption>
+</figure>
+<p>The selected model is YOLO11s. Its recall of 0.477 and mAP@0.5 of
+0.640 are the best among the models that met the control budget. Its
+median latency of 534 ms leaves roughly 466 ms of the 1 s budget for
+capture, decision, serial transport, and display. RT-DETRv2-R18 is not
+usable in this configuration: at 3.4 s per frame, the rover would travel
+more than a metre between decisions.</p>
+<p>The low precision of RT-DETRv2-R18 (0.283) is a reminder that high
+recall alone is not enough. The model produced an average of 22.7
+predictions per image against 7.3 ground truths, which means it flooded
+the frame with false positives. The YOLO11s model produced 4.3
+predictions per image, which is much closer to the ground-truth
+density.</p>
+<h2 id="runtime-backend-comparison">10.3 Runtime Backend Comparison</h2>
+<p>The same YOLO11s model was executed through three runtimes: PyTorch,
+ONNX Runtime, and OpenVINO. ONNX Runtime was the fastest, with a median
+latency of 181 ms, followed by PyTorch at 435 ms and OpenVINO at 461 ms.
+The ONNX run also produced slightly higher recall and mAP, which is
+consistent with differences in pre- and post-processing rather than with
+a different model.</p>
+<table>
+<caption><p><span id="_Toc244027336" class="anchor"></span>Table 21:
+YOLO11s runtime backend comparison [MEASURED].</p></caption>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 16%" />
+<col style="width: 12%" />
+<col style="width: 13%" />
+<col style="width: 35%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Runtime</strong></th>
+<th style="text-align: center;"><strong>Median latency</strong></th>
+<th style="text-align: center;"><strong>Recall</strong></th>
+<th style="text-align: center;"><strong>mAP@0.5</strong></th>
+<th style="text-align: center;"><strong>Note</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PyTorch (.pt)</td>
+<td style="text-align: center;">435 ms</td>
+<td style="text-align: center;">0.477</td>
+<td style="text-align: center;">0.640</td>
+<td>Reference implementation</td>
+</tr>
+<tr>
+<td>ONNX Runtime</td>
+<td style="text-align: center;">181 ms</td>
+<td style="text-align: center;">0.490</td>
+<td style="text-align: center;">0.648</td>
+<td>Fastest measured backend</td>
+</tr>
+<tr>
+<td>OpenVINO</td>
+<td style="text-align: center;">461 ms</td>
+<td style="text-align: center;">0.490</td>
+<td style="text-align: center;">0.648</td>
+<td>Higher overhead on this host</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image51.png"
+style="width:6.1in;height:3.209in" />
+<figcaption><p><span id="_Toc244027312" class="anchor"></span>Figure 56:
+Median latency for the three YOLO11s runtime backends.</p></figcaption>
+</figure>
+<h2 id="event-log-evaluation">10.4 Event-Log Evaluation</h2>
+<p>The event-log evaluation analysed 9,118 rows from 17 runs recorded
+between 18 September and 1 October 2026. The log contains the mode,
+decision, target class, confidence, distance, inference time, and safety
+state for each processed frame. The evaluation checked ten invariants
+and found zero violations.</p>
+<table style="width:94%;">
+<caption><p><span id="_Toc244027337" class="anchor"></span>Table 22:
+Event-log evaluation summary [MEASURED].</p></caption>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 24%" />
+<col style="width: 42%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Metric</strong></th>
+<th style="text-align: center;"><strong>Value</strong></th>
+<th style="text-align: center;"><strong>Interpretation</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rows analysed</td>
+<td style="text-align: center;">9,118</td>
+<td>17 runs, 0 malformed rows</td>
+</tr>
+<tr>
+<td>SAFE state</td>
+<td style="text-align: center;">8,483 (93.04%)</td>
+<td>Most frames had no safety intervention</td>
+</tr>
+<tr>
+<td>Safety interventions</td>
+<td style="text-align: center;">635 (6.96%)</td>
+<td>Close obstacle, low confidence, etc.</td>
+</tr>
+<tr>
+<td>STOP decisions</td>
+<td style="text-align: center;">1,989 (21.81%)</td>
+<td>Includes no-target and safety stops</td>
+</tr>
+<tr>
+<td>FORWARD decisions</td>
+<td style="text-align: center;">7,103 (77.90%)</td>
+<td>Dominant motion command</td>
+</tr>
+<tr>
+<td>Detection rate</td>
+<td style="text-align: center;">80.07%</td>
+<td>Bottle present in 7,301 frames</td>
+</tr>
+<tr>
+<td>Mean confidence</td>
+<td style="text-align: center;">0.495</td>
+<td>At the 0.25 threshold</td>
+</tr>
+<tr>
+<td>Median FPS</td>
+<td style="text-align: center;">17.7</td>
+<td>Event-log pipeline, not detector latency</td>
+</tr>
+<tr>
+<td>Invariant violations</td>
+<td style="text-align: center;">0</td>
+<td>Ten invariants checked</td>
+</tr>
+</tbody>
+</table>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image52.png"
+style="width:6.1in;height:3.02052in" />
+<figcaption><p><span id="_Toc244027313" class="anchor"></span>Figure 57:
+Non-safe safety states recorded during the event-log
+campaign.</p></figcaption>
+</figure>
+<p>The most frequent non-safe state was CAUTION_CLOSE_OBSTACLE (208
+rows), followed by LOW_CONFIDENCE (186 rows) and
+CAUTION_UNKNOWN_DISTANCE (112 rows). Communication loss was rare (20
+rows), which is consistent with a bench setup in which the USB cable is
+short and the host is not moved. The low count is not evidence that the
+watchdog is unnecessary; it is evidence that the test conditions did not
+stress the link.</p>
+<h2 id="simulation-results">10.5 Simulation Results</h2>
+<p>Three Wokwi simulations were run against the Arduino firmware. The
+simulations exercised forward, backward, left, right, stop, obstacle
+refusal, and watchdog expiry. The firmware behaved as specified in all
+three runs. Simulation is not a substitute for hardware testing, but it
+is valuable for catching logic errors before they reach the bench.</p>
+<table style="width:94%;">
+<caption><p><span id="_Toc244027338" class="anchor"></span>Table 23:
+Wokwi simulation runs and outcomes.</p></caption>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 25%" />
+<col style="width: 12%" />
+<col style="width: 46%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Run</strong></th>
+<th style="text-align: center;"><strong>Scenario</strong></th>
+<th style="text-align: center;"><strong>Result</strong></th>
+<th style="text-align: center;"><strong>Observation</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Nominal commands</td>
+<td style="text-align: center;">Pass</td>
+<td>All five commands produced the expected motor states</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Obstacle at 10 cm</td>
+<td style="text-align: center;">Pass</td>
+<td>Forward refused; STOP reported</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Watchdog expiry</td>
+<td style="text-align: center;">Pass</td>
+<td>Motors stopped after 3 s without a command</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-is-still-pending">10.6 What Is Still Pending</h2>
+<p>The final TB6612FNG build has not yet completed the full hardware
+test campaign. The following measurements are marked [PENDING]:
+continuous runtime on a full pack, motor current under load, driver
+temperature during a 10-minute run, actual stopping distance at 15 cm,
+and repeatability of the obstacle gate across ten trials. These are not
+cosmetic gaps; they are the measurements that would turn the design
+estimates in Chapter 7 into verified performance figures.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Reading the results honestly</strong></p>
+<p>The detector numbers are measured. The event-log numbers are
+measured. The runtime, current, and stopping-distance numbers for the
+final TB6612FNG build are design estimates or pending. Mixing the two
+categories would overstate the maturity of the prototype.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<p>CHAPTER 11</p>
+<h1 id="case-study-the-26-october-battery-short-circuit">Case Study: The
+26 October Battery Short Circuit</h1>
+<p>On 26 October 2026, at approximately 20:14, the rover suffered a
+battery short circuit during power integration. The positive terminal of
+the 2S pack touched the grounded aluminium chassis while the pack was
+connected. The event damaged the terminal lug and the compression
+spring, and it affected a small number of components on the power path.
+No one was injured. This chapter reconstructs the event, identifies the
+root cause, describes the damage, and records the corrective actions
+that changed the design.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Incident at a glance</strong></p>
+<p>Date: 26 October 2026, approximately 20:14. Location: electronics
+bench. Trigger: positive battery terminal contacted the grounded
+chassis. Immediate effect: short circuit, terminal and spring damage,
+power-path components affected. Immediate action: power removed, pack
+isolated, bench cleared. Root cause: exposed positive terminal combined
+with a grounded chassis and no strain relief.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="what-happened">11.1 What Happened</h2>
+<p>The rover had been running on the bench with the L298N driver. The
+TB6612FNG had just been photographed and was being prepared for
+installation. The battery pack was seated in its holder, and the
+positive lead was being positioned for a continuity check. The terminal
+lug was exposed; the chassis plate beneath it was grounded through the
+motor mounts and the common ground. When the lug touched the plate, the
+pack was shorted through the chassis.</p>
+<p>The short was brief but energetic. The terminal lug and the
+compression spring were damaged by the current and the heat. The pack
+was removed immediately, and the bench was cleared of loose metal. The
+rover was not powered again that evening. The damaged parts were
+photographed the same night, and the photograph is included in this
+report as primary evidence.</p>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image36.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027314" class="anchor"></span>Figure 58:
+Damaged battery terminal lug and compression spring photographed after
+the short circuit.</p></figcaption>
+</figure>
+<h2 id="timeline">11.2 Timeline</h2>
+<table style="width:95%;">
+<caption><p><span id="_Toc244027339" class="anchor"></span>Table 24:
+Reconstructed timeline of the 26 October incident.</p></caption>
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 49%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Time</strong></th>
+<th style="text-align: center;"><strong>Event</strong></th>
+<th style="text-align: center;"><strong>Action</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>19:08</td>
+<td>TB6612FNG photographed before installation</td>
+<td>Upgrade preparation</td>
+</tr>
+<tr>
+<td>19:09</td>
+<td>TB6612FNG pinout photographed</td>
+<td>Wiring reference</td>
+</tr>
+<tr>
+<td>~20:00</td>
+<td>Battery seated; positive lead positioned</td>
+<td>Continuity check planned</td>
+</tr>
+<tr>
+<td>20:14</td>
+<td>Positive terminal touched grounded chassis</td>
+<td style="text-align: center;">Short circuit</td>
+</tr>
+<tr>
+<td>20:14</td>
+<td>Power removed; pack isolated</td>
+<td>Immediate response</td>
+</tr>
+<tr>
+<td>20:15</td>
+<td>Bench cleared of loose metal</td>
+<td style="text-align: center;">Make-safe</td>
+</tr>
+<tr>
+<td>20:20</td>
+<td>Damage photographed</td>
+<td>Evidence capture</td>
+</tr>
+<tr>
+<td>Next session</td>
+<td>Insulation, fuse, strain relief, driver upgrade</td>
+<td>Corrective action</td>
+</tr>
+</tbody>
+</table>
+<h2 id="root-cause">11.3 Root Cause</h2>
+<p>The immediate cause was a positive terminal in contact with a
+grounded conductor. The underlying causes were more interesting. First,
+the terminal lug was exposed: the soldered joint had been checked
+electrically but not insulated mechanically. Second, the battery holder
+allowed the pack to shift, so the lead could move into contact with the
+chassis. Third, the positive lead had no strain relief, so the terminal
+was loaded by the weight of the wire. Fourth, the bench procedure did
+not require the pack to be disconnected before the lead was
+repositioned.</p>
+<p>This is a classic Swiss-cheese failure: several small weaknesses
+lined up. Any one of them would have prevented the event. If the lug had
+been insulated, the contact would have been harmless. If the holder had
+restrained the pack, the lead would not have moved. If the lead had been
+strain-relieved, the terminal would not have been loaded. If the
+procedure had required disconnection, the pack would not have been live
+during the adjustment.</p>
+<table style="width:98%;">
+<caption><p><span id="_Toc244027340" class="anchor"></span>Table 25:
+Root causes and corrective actions for the short-circuit
+incident.</p></caption>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 14%" />
+<col style="width: 28%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Cause</strong></th>
+<th style="text-align: center;"><strong>Category</strong></th>
+<th style="text-align: center;"><strong>Contribution</strong></th>
+<th style="text-align: center;"><strong>Corrective action</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Exposed positive lug</td>
+<td style="text-align: center;">Design</td>
+<td>Direct contact path</td>
+<td>Heat-shrink and insulated cover</td>
+</tr>
+<tr>
+<td>Pack could shift in holder</td>
+<td style="text-align: center;">Design</td>
+<td>Allowed lead movement</td>
+<td>Retention bracket and foam</td>
+</tr>
+<tr>
+<td>No strain relief</td>
+<td style="text-align: center;">Design</td>
+<td>Loaded the terminal</td>
+<td>Cable tie and service loop</td>
+</tr>
+<tr>
+<td>No fuse in the lead</td>
+<td style="text-align: center;">Design</td>
+<td>Unlimited fault current</td>
+<td>3 A inline fuse</td>
+</tr>
+<tr>
+<td>Live adjustment procedure</td>
+<td style="text-align: center;">Procedure</td>
+<td>Pack energized during work</td>
+<td>Disconnect before handling</td>
+</tr>
+<tr>
+<td>No pre-power checklist</td>
+<td style="text-align: center;">Procedure</td>
+<td>Missed inspection</td>
+<td>Checklist before every power-up</td>
+</tr>
+</tbody>
+</table>
+<h2 id="damage-assessment">11.4 Damage Assessment</h2>
+<p>The visible damage was confined to the battery terminal lug and the
+compression spring. The lug was pitted and discoloured, and the spring
+had lost tension. A small number of components on the power path were
+affected; the motor driver and the logic boards were not powered through
+the fault path and were inspected separately. The battery pack was
+removed from service and its cells were checked individually before
+reuse.</p>
+<table style="width:94%;">
+<caption><p><span id="_Toc244027341" class="anchor"></span>Table 26:
+Damage assessment and disposition of affected items.</p></caption>
+<colgroup>
+<col style="width: 26%" />
+<col style="width: 37%" />
+<col style="width: 29%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Item</strong></th>
+<th style="text-align: center;"><strong>Damage</strong></th>
+<th style="text-align: center;"><strong>Disposition</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Battery terminal lug</td>
+<td>Pitting, discolouration</td>
+<td style="text-align: center;">Replaced</td>
+</tr>
+<tr>
+<td>Compression spring</td>
+<td style="text-align: center;">Lost tension</td>
+<td style="text-align: center;">Replaced</td>
+</tr>
+<tr>
+<td>Inline fuse</td>
+<td>Not fitted at the time</td>
+<td style="text-align: center;">Added in the rebuild</td>
+</tr>
+<tr>
+<td>L298N driver</td>
+<td>Inspected; not used in final build</td>
+<td style="text-align: center;">Retired</td>
+</tr>
+<tr>
+<td>Logic boards</td>
+<td>Inspected; no visible damage</td>
+<td style="text-align: center;">Retained after voltage check</td>
+</tr>
+<tr>
+<td>Battery pack</td>
+<td>Cells checked individually</td>
+<td style="text-align: center;">Retained with new terminal</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>A note on honesty</strong></p>
+<p>The incident is documented because it happened, not because it is
+unusual. Small robots are often built with exposed terminals and live
+adjustments. The value of the case study is in the corrective actions,
+not in the drama of the event.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="corrective-actions">11.5 Corrective Actions</h2>
+<p>The rebuild addressed both the design and the procedure. On the
+design side, the positive terminal was covered with heat-shrink, the
+battery holder was fitted with a retention bracket and foam, the lead
+was given a service loop and a cable tie, and a 3 A inline fuse was
+added close to the pack. The L298N was replaced with a TB6612FNG, which
+reduced the thermal load and the voltage drop. On the procedure side, a
+pre-power checklist was introduced and the pack is now disconnected
+before any lead is repositioned.</p>
+<ol start="14" type="1">
+<li><p>Insulate the positive terminal with heat-shrink and a snap-on
+cover.</p></li>
+<li><p>Add a retention bracket and foam so the pack cannot shift in the
+holder.</p></li>
+<li><p>Provide a service loop and a cable tie for strain
+relief.</p></li>
+<li><p>Fit a 3 A inline fuse within 10 cm of the positive
+terminal.</p></li>
+<li><p>Replace the L298N with the TB6612FNG and verify the new pin
+map.</p></li>
+<li><p>Disconnect the pack before repositioning any lead.</p></li>
+<li><p>Complete the pre-power checklist before every power-up.</p></li>
+<li><p>Photograph the power path after every change.</p></li>
+</ol>
+<figure>
+<img
+src="C:\Users\bezal\Downloads\MWE PROJECT\reports\pdf_media/media/image35.jpg"
+style="width:2.44567in;height:4.35in" />
+<figcaption><p><span id="_Toc244027315" class="anchor"></span>Figure 59:
+Insulated motor joints adopted before the incident; the same practice
+was extended to the battery terminal.</p></figcaption>
+</figure>
+<h2 id="pre-power-checklist">11.6 Pre-Power Checklist</h2>
+<table style="width:94%;">
+<caption><p><span id="_Toc244027342" class="anchor"></span>Table 27:
+Pre-power checklist introduced after the incident.</p></caption>
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 59%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Check</strong></th>
+<th style="text-align: center;"><strong>Pass criterion</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Battery terminal insulation</td>
+<td>No exposed metal; heat-shrink intact</td>
+</tr>
+<tr>
+<td>Fuse</td>
+<td>Correct rating; holder secure; continuity verified</td>
+</tr>
+<tr>
+<td>Buck output</td>
+<td>5.0 V +/- 0.1 V before logic is connected</td>
+</tr>
+<tr>
+<td>Polarity</td>
+<td>Positive and negative identified at every connector</td>
+</tr>
+<tr>
+<td>Ground</td>
+<td>Single star point; no daisy-chained motor ground</td>
+</tr>
+<tr>
+<td>Strain relief</td>
+<td>No load on soldered joints; service loop present</td>
+</tr>
+<tr>
+<td>Loose metal</td>
+<td>Bench clear of screws, cut leads, and tools</td>
+</tr>
+<tr>
+<td>Switch</td>
+<td>OFF before connecting or disconnecting the pack</td>
+</tr>
+</tbody>
+</table>
+<h2 id="lessons-learned">11.7 Lessons Learned</h2>
+<p>The incident changed the way the project thinks about safety. The
+first lesson is that a fuse is not a substitute for insulation; it
+limits the consequence of a fault but does not prevent the fault. The
+second is that mechanical retention is part of electrical safety: a
+battery that can move is a battery that can short. The third is that
+procedures are engineering artefacts; a checklist is as important as a
+capacitor. The fourth is that the cheapest driver is not always the best
+driver: the TB6612FNG upgrade reduced heat and voltage drop, and it made
+the power path easier to inspect.</p>
+<p>The final lesson is about documentation. The damaged terminal was
+photographed immediately, before it was repaired. That photograph is now
+the most useful image in the report, because it makes the failure
+concrete. A report that showed only the finished rover would be less
+useful to the next student than a report that shows what went wrong and
+why.</p>
+<p>CHAPTER 12</p>
+<h1 id="discussion-limitations-and-future-work">Discussion, Limitations,
+and Future Work</h1>
+<p>The rover meets its core objectives: it streams video, detects a
+target, steers toward it, stops at an obstacle, and stops when the link
+is lost. It does so with commodity parts and a documented build. It is
+not a finished product, and this chapter is explicit about the gap
+between the prototype and a dependable autonomous system.</p>
+<h2 id="what-worked">12.1 What Worked</h2>
+<ul>
+<li><p>The three-tier split kept vision and safety independent. A host
+failure does not prevent the Arduino from stopping the motors.</p></li>
+<li><p>The ESP32-CAM Wi-Fi stream was reliable at short range and
+required no data wiring to the Arduino, which avoided a level-shift
+hazard.</p></li>
+<li><p>The YOLO11s model met the 1 s control budget and produced usable
+bounding boxes for the target class.</p></li>
+<li><p>The event-log evaluation found zero violations of ten safety
+invariants across 9,118 rows.</p></li>
+<li><p>The photo-dated build log made it possible to reconstruct the
+project honestly, including the incident.</p></li>
+</ul>
+<h2 id="limitations">12.2 Limitations</h2>
+<table style="width:94%;">
+<caption><p><span id="_Toc244027343" class="anchor"></span>Table 28:
+Limitations of the current prototype and possible
+remedies.</p></caption>
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 37%" />
+<col style="width: 31%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Limitation</strong></th>
+<th style="text-align: center;"><strong>Impact</strong></th>
+<th style="text-align: center;"><strong>Possible remedy</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Laptop in the loop</td>
+<td>Not standalone; depends on a host and Wi-Fi</td>
+<td>On-board SBC or edge accelerator</td>
+</tr>
+<tr>
+<td>No wheel encoders</td>
+<td>Open-loop straight-line motion; no odometry</td>
+<td>Add quadrature encoders</td>
+</tr>
+<tr>
+<td>Monocular camera</td>
+<td>No direct depth; scale is ambiguous</td>
+<td>Stereo camera or depth sensor</td>
+</tr>
+<tr>
+<td>Single target class</td>
+<td>Cannot distinguish multiple objects</td>
+<td>Multi-class training and tracking</td>
+</tr>
+<tr>
+<td>Narrow ultrasonic cone</td>
+<td>Can miss soft or angled obstacles</td>
+<td>Add LiDAR or multiple sensors</td>
+</tr>
+<tr>
+<td>No hardware watchdog</td>
+<td>Firmware hang may leave last command</td>
+<td>Enable AVR watchdog timer</td>
+</tr>
+<tr>
+<td>Exposed electronics</td>
+<td>Fragile; not sealed</td>
+<td>3D-printed enclosure</td>
+</tr>
+<tr>
+<td>Limited hardware validation</td>
+<td>Final TB6612FNG build not fully characterised</td>
+<td>Complete the pending test campaign</td>
+</tr>
+</tbody>
+</table>
+<h2 id="threats-to-validity">12.3 Threats to Validity</h2>
+<p>The detector results are valid for the COCO128 subset and the chosen
+confidence threshold. They are not a claim about performance on a
+different dataset, in low light, or with a different camera. The
+event-log results are valid for the recorded runs, which were mostly
+bench sessions with a short USB cable. The safety statistics therefore
+under-represent link-loss scenarios. The hardware results are the
+weakest evidence: the final driver build has not completed the runtime,
+current, and stopping-distance tests.</p>
+<p>The build narrative is based on photograph timestamps, which record
+when the image was taken, not necessarily when the work was done. A
+photograph taken at 21:36 may show a session that began hours earlier.
+The narrative uses the timestamps as anchors and avoids claiming more
+precision than the metadata supports.</p>
+<h2 id="future-work">12.4 Future Work</h2>
+<p>The next version of the rover should address the following, in
+priority order:</p>
+<ol start="22" type="1">
+<li><p>Complete the hardware test campaign for the TB6612FNG build:
+runtime, current, driver temperature, stopping distance, and ten-trial
+obstacle repeatability.</p></li>
+<li><p>Add quadrature encoders and a closed-loop wheel-speed controller
+to reduce curvature and enable odometry.</p></li>
+<li><p>Move detection onto an on-board single-board computer or edge
+accelerator so the rover does not depend on a laptop.</p></li>
+<li><p>Add a hardware watchdog timer and a power-on self-test that
+checks the driver, the sensor, and the serial link.</p></li>
+<li><p>Design a 3D-printed enclosure with a fused, keyed battery
+connector and a serviceable cable harness.</p></li>
+<li><p>Add a second ranging sensor or a LiDAR to reduce the blind spots
+of the HC-SR04.</p></li>
+<li><p>Collect a domain-specific dataset and fine-tune the detector for
+indoor lighting and the actual target objects.</p></li>
+<li><p>Implement multi-target tracking and a simple occupancy map for
+cluttered spaces.</p></li>
+</ol>
+<h2 id="broader-reflection">12.5 Broader Reflection</h2>
+<p>The project's most valuable outcome is not the rover itself. It is
+the demonstration that a small, distributed system can be made safer by
+assigning authority explicitly: the laptop is allowed to perceive and
+decide, but it is not allowed to be the last line of defence. The same
+pattern appears in industrial control, in automotive systems, and in any
+robot that must fail safely. The rover is a small example of a large
+idea.</p>
+<p>The second outcome is methodological. The photo-dated log, the
+measured benchmarks, and the incident case study form a record that
+another student can follow. That record is more useful than a polished
+demonstration video, because it shows the decisions and the mistakes
+that a video would hide.</p>
+<p>CHAPTER 13</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>This report documented the design, assembly, software integration,
+testing, and recovery of a low-cost vision-guided differential-drive
+rover. The rover uses an ESP32-CAM for Wi-Fi video, a laptop for
+YOLO-based detection and decision-making, and an Arduino UNO for
+deterministic motor and obstacle safety. The three tiers are connected
+by narrow interfaces: MJPEG over Wi-Fi and one-character commands over
+USB serial.</p>
+<p>The build was completed in stages between 3 and 26 October 2026. The
+mechanical base, the ultrasonic mount, the bench wiring, the two-tier
+stack, the Wi-Fi stream, and the insulated motor harness were each
+photographed and recorded. The final power integration was interrupted
+by a battery short circuit that damaged the terminal and a small number
+of power-path components. The recovery added insulation, a fuse, strain
+relief, a pre-power checklist, and a TB6612FNG driver upgrade.</p>
+<p>The measured evidence supports three conclusions. First, a commodity
+ESP32-CAM and a laptop can provide usable visual servoing for a small
+indoor rover. Second, a YOLO11s detector at 320 pixels can meet a 1 s
+control budget on a modest CPU while achieving recall 0.477, F1 0.601,
+and mAP@0.5 0.640 on the COCO128 evaluation set. Third, a layered safety
+architecture with a 3 s communication watchdog and a 15 cm obstacle gate
+can enforce a safe stop even when the perception tier is unreliable.</p>
+<p>The project also produced a methodological result: a photo-dated
+build narrative, a measured benchmark, and an honest incident case study
+are more valuable to the next student than a polished but undocumented
+demonstration. The rover is a prototype, not a product. Its limitations
+are known, its pending measurements are labelled, and its next steps are
+specific. That is the appropriate state for a student project at this
+stage.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Final statement</strong></p>
+<p>The rover can see, decide, and stop. The safety layer is independent
+of the vision layer, the failure paths converge on STOP, and the build
+is documented well enough to be reproduced and improved.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<p>REFERENCES</p>
+<h1 id="references">References</h1>
+<p>The following sources informed the design and the background
+chapters. Repository files and measured logs are cited where they are
+the direct evidence for a result.</p>
+<p><strong>[1]</strong> Siegwart, R., Nourbakhsh, I. R., and Scaramuzza,
+D. Introduction to Autonomous Mobile Robots, 2nd ed., MIT Press,
+2011.</p>
+<p><strong>[2]</strong> Redmon, J., Divvala, S., Girshick, R., and
+Farhadi, A. “You Only Look Once: Unified, Real-Time Object Detection,”
+CVPR, 2016.</p>
+<p><strong>[3]</strong> Jocher, G., Chaurasia, A., and Qiu, J.
+Ultralytics YOLO (Version 8.0) [Computer software], 2023.
+https://github.com/ultralytics/ultralytics</p>
+<p><strong>[4]</strong> Carion, N., Massa, F., Synnaeve, G., Usunier,
+N., Kirillov, A., and Zagoruyko, S. “End-to-End Object Detection with
+Transformers,” ECCV, 2020.</p>
+<p><strong>[5]</strong> Zhao, Y., Lv, W., Xu, S., Wei, J., Wang, G.,
+Dang, Q., Liu, Y., and Chen, J. “DETRs Beat YOLOs on Real-time Object
+Detection,” CVPR, 2024.</p>
+<p><strong>[6]</strong> Espressif Systems. ESP32-CAM Development Board
+Documentation. https://docs.espressif.com/</p>
+<p><strong>[7]</strong> Arduino. Arduino UNO R3 Product Reference
+Manual. https://docs.arduino.cc/</p>
+<p><strong>[8]</strong> Toshiba Semiconductor. TB6612FNG Dual DC Motor
+Driver IC Datasheet.</p>
+<p><strong>[9]</strong> STMicroelectronics. L298 Dual Full-Bridge Driver
+Datasheet.</p>
+<p><strong>[10]</strong> Texas Instruments. LM2596 SIMPLE SWITCHER Power
+Converter Datasheet.</p>
+<p><strong>[11]</strong> Elecfreaks. HC-SR04 Ultrasonic Ranging Module
+Datasheet.</p>
+<p><strong>[12]</strong> OpenCV. OpenCV 4.x Documentation.
+https://docs.opencv.org/</p>
+<p><strong>[13]</strong> Wokwi. Online Arduino and ESP32 Simulator.
+https://wokwi.com/</p>
+<p><strong>[14]</strong> Project repository. Firmware, host software,
+test suite, event logs, and benchmark JSON files, 2026.</p>
+<p>APPENDIX A</p>
+<h1 id="bill-of-materials">Bill of Materials</h1>
+<p>The bill of materials below lists the parts used in the final
+prototype. Costs are indicative Indian market prices at the time of
+build and are included to show the order of magnitude, not to serve as a
+quotation. The rover was assembled from a mixture of laboratory stock
+and purchased modules.</p>
+<table style="width:97%;">
+<caption><p><span id="_Toc244027344" class="anchor"></span>Table 29:
+Indicative bill of materials for the final prototype.</p></caption>
+<colgroup>
+<col style="width: 18%" />
+<col style="width: 29%" />
+<col style="width: 7%" />
+<col style="width: 18%" />
+<col style="width: 21%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Item</strong></th>
+<th style="text-align: center;"><strong>Specification</strong></th>
+<th style="text-align: center;"><strong>Qty</strong></th>
+<th style="text-align: center;"><strong>Indicative cost
+(INR)</strong></th>
+<th style="text-align: center;"><strong>Role</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ESP32-CAM</td>
+<td>AI-Thinker, OV2640, 4 MB</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">600</td>
+<td style="text-align: center;">Wi-Fi video</td>
+</tr>
+<tr>
+<td>Arduino UNO R3</td>
+<td>ATmega328P, 5 V</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">700</td>
+<td style="text-align: center;">Safety supervisor</td>
+</tr>
+<tr>
+<td>TT gear motor</td>
+<td>3-6 V, dual shaft</td>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">240</td>
+<td style="text-align: center;">Drive</td>
+</tr>
+<tr>
+<td>TB6612FNG</td>
+<td>Dual MOSFET H-bridge</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">250</td>
+<td style="text-align: center;">Motor driver</td>
+</tr>
+<tr>
+<td>HC-SR04</td>
+<td>Ultrasonic ranging kit</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">100</td>
+<td style="text-align: center;">Obstacle gate</td>
+</tr>
+<tr>
+<td>2S 18650 pack</td>
+<td>7.4 V, 2000 mAh</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">500</td>
+<td style="text-align: center;">Main power</td>
+</tr>
+<tr>
+<td>LM2596 buck</td>
+<td>Adjustable step-down</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">120</td>
+<td style="text-align: center;">5 V logic rail</td>
+</tr>
+<tr>
+<td>Acrylic chassis</td>
+<td>Laser-cut plates</td>
+<td style="text-align: center;">1 set</td>
+<td style="text-align: center;">400</td>
+<td style="text-align: center;">Structure</td>
+</tr>
+<tr>
+<td>Caster wheel</td>
+<td style="text-align: center;">Omni, 2 inch</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">100</td>
+<td style="text-align: center;">Third support</td>
+</tr>
+<tr>
+<td>Rocker switch</td>
+<td style="text-align: center;">SPST, 3 A</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">40</td>
+<td style="text-align: center;">Master isolation</td>
+</tr>
+<tr>
+<td>Inline fuse</td>
+<td>3 A with holder</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">50</td>
+<td style="text-align: center;">Short protection</td>
+</tr>
+<tr>
+<td>Wiring and fasteners</td>
+<td>Dupont, heat-shrink, screws</td>
+<td style="text-align: center;">1 set</td>
+<td style="text-align: center;">300</td>
+<td style="text-align: center;">Harness</td>
+</tr>
+</tbody>
+</table>
+<p>The total indicative cost is approximately INR 3,400 (about USD 41 at
+the time of writing), which is below the USD 70 target. The figure
+excludes tools, the laptop, and the 3D-printed parts that were not used
+in the final build.</p>
+<p>APPENDIX B</p>
+<h1 id="pin-map-and-wiring-reference">Pin Map and Wiring Reference</h1>
+<p>The pin map below reflects the final firmware configuration. The
+L298N baseline used the same control pins with different signal names;
+the TB6612FNG adapter renames ENA to PWMA, IN1/IN2 to AIN1/AIN2, IN3/IN4
+to BIN1/BIN2, and ENB to PWMB, and ties STBY to the 5 V logic rail. D0
+and D1 are reserved for USB serial and must never be jumpered to the
+ESP32.</p>
+<table>
+<caption><p><span id="_Toc244027345" class="anchor"></span>Table 30:
+Arduino UNO pin map for the final build.</p></caption>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 31%" />
+<col style="width: 13%" />
+<col style="width: 37%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Arduino pin</strong></th>
+<th style="text-align: center;"><strong>Connected to</strong></th>
+<th style="text-align: center;"><strong>Direction</strong></th>
+<th style="text-align: center;"><strong>Function</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D0 / RXD</td>
+<td style="text-align: center;">USB serial</td>
+<td style="text-align: center;">Input</td>
+<td>Host command ingest (9600 baud)</td>
+</tr>
+<tr>
+<td>D1 / TXD</td>
+<td style="text-align: center;">USB serial</td>
+<td style="text-align: center;">Output</td>
+<td>Telemetry to host</td>
+</tr>
+<tr>
+<td>D2</td>
+<td style="text-align: center;">Encoder L (reserved)</td>
+<td style="text-align: center;">Input</td>
+<td>Left wheel tick (not fitted)</td>
+</tr>
+<tr>
+<td>D3</td>
+<td style="text-align: center;">Encoder R (reserved)</td>
+<td style="text-align: center;">Input</td>
+<td>Right wheel tick (not fitted)</td>
+</tr>
+<tr>
+<td>D5</td>
+<td style="text-align: center;">TB6612FNG PWMA</td>
+<td style="text-align: center;">Output</td>
+<td>Left motor speed</td>
+</tr>
+<tr>
+<td>D6</td>
+<td style="text-align: center;">TB6612FNG AIN1</td>
+<td style="text-align: center;">Output</td>
+<td>Left motor direction</td>
+</tr>
+<tr>
+<td>D7</td>
+<td style="text-align: center;">TB6612FNG AIN2</td>
+<td style="text-align: center;">Output</td>
+<td>Left motor direction</td>
+</tr>
+<tr>
+<td>D8</td>
+<td style="text-align: center;">TB6612FNG BIN1</td>
+<td style="text-align: center;">Output</td>
+<td>Right motor direction</td>
+</tr>
+<tr>
+<td>D9</td>
+<td style="text-align: center;">TB6612FNG BIN2</td>
+<td style="text-align: center;">Output</td>
+<td>Right motor direction</td>
+</tr>
+<tr>
+<td>D10</td>
+<td style="text-align: center;">TB6612FNG PWMB</td>
+<td style="text-align: center;">Output</td>
+<td>Right motor speed</td>
+</tr>
+<tr>
+<td>D11</td>
+<td style="text-align: center;">HC-SR04 TRIG</td>
+<td style="text-align: center;">Output</td>
+<td>10 us trigger pulse</td>
+</tr>
+<tr>
+<td>D12</td>
+<td style="text-align: center;">HC-SR04 ECHO</td>
+<td style="text-align: center;">Input</td>
+<td>Echo pulse width</td>
+</tr>
+<tr>
+<td>D13</td>
+<td style="text-align: center;">Onboard LED</td>
+<td style="text-align: center;">Output</td>
+<td style="text-align: center;">Heartbeat</td>
+</tr>
+<tr>
+<td>5V</td>
+<td style="text-align: center;">Buck 5 V, TB6612FNG VCC/STBY</td>
+<td style="text-align: center;">Power</td>
+<td style="text-align: center;">Logic supply</td>
+</tr>
+<tr>
+<td>GND</td>
+<td style="text-align: center;">Star ground</td>
+<td style="text-align: center;">Power</td>
+<td style="text-align: center;">0 V reference</td>
+</tr>
+</tbody>
+</table>
+<table>
+<caption><p><span id="_Toc244027346" class="anchor"></span>Table 31:
+ESP32-CAM pin usage. No data pins connect to the Arduino.</p></caption>
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 31%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>ESP32-CAM pin</strong></th>
+<th style="text-align: center;"><strong>Connected to</strong></th>
+<th style="text-align: center;"><strong>Function</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5V</td>
+<td style="text-align: center;">Buck 5 V</td>
+<td>Power in (onboard 3.3 V LDO)</td>
+</tr>
+<tr>
+<td>GND</td>
+<td style="text-align: center;">Star ground</td>
+<td style="text-align: center;">0 V reference</td>
+</tr>
+<tr>
+<td>GPIO 0</td>
+<td style="text-align: center;">OV2640 XCLK</td>
+<td style="text-align: center;">Camera clock</td>
+</tr>
+<tr>
+<td>GPIO 26 / 27</td>
+<td style="text-align: center;">OV2640 SIOD / SIOC</td>
+<td>Camera control bus</td>
+</tr>
+<tr>
+<td>GPIO 5, 18, 19, 21, 36, 39, 34, 35</td>
+<td style="text-align: center;">OV2640 D0-D7</td>
+<td>Camera data bus</td>
+</tr>
+<tr>
+<td>GPIO 22 / 23 / 25</td>
+<td style="text-align: center;">OV2640 PCLK / HREF / VSYNC</td>
+<td style="text-align: center;">Camera timing</td>
+</tr>
+<tr>
+<td>GPIO 32</td>
+<td style="text-align: center;">OV2640 PWDN</td>
+<td>Camera power-down</td>
+</tr>
+<tr>
+<td>GPIO 4</td>
+<td style="text-align: center;">Flash LED</td>
+<td>Illumination (optional)</td>
+</tr>
+<tr>
+<td>GPIO 33</td>
+<td style="text-align: center;">Red status LED</td>
+<td style="text-align: center;">Diagnostic</td>
+</tr>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Never jumper Arduino TX to ESP32 RX</strong></p>
+<p>The Arduino TX pin is 5 V. The ESP32 GPIO pins are 3.3 V. A direct
+connection can destroy the ESP32 pin. The rover deliberately has no
+wired data link between the two boards; video travels over Wi-Fi and
+commands travel over USB.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<p>APPENDIX C</p>
+<h1 id="photographic-index">Photographic Index</h1>
+<p>The photographs are the primary evidence for the build chronology.
+The table lists the image, the date encoded in the filename or metadata,
+and the report section where it is used. Times are included where the
+filename or screenshot provides them.</p>
+<table style="width:93%;">
+<caption><p><span id="_Toc244027347" class="anchor"></span>Table 32:
+Photographic index with dates and report locations.</p></caption>
+<colgroup>
+<col style="width: 35%" />
+<col style="width: 19%" />
+<col style="width: 24%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Image</strong></th>
+<th style="text-align: center;"><strong>Date / time</strong></th>
+<th style="text-align: center;"><strong>Subject</strong></th>
+<th style="text-align: center;"><strong>Section</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hw_ultrasonic_sensor_hcsr04_with_bracket.jpg</td>
+<td style="text-align: center;">3 Oct 2026</td>
+<td style="text-align: center;">HC-SR04 kit</td>
+<td style="text-align: center;">5.5, 6.1</td>
+</tr>
+<tr>
+<td>assembly_01 ... switch.jpeg</td>
+<td style="text-align: center;">6 Oct 2026</td>
+<td style="text-align: center;">Battery holder and switch</td>
+<td style="text-align: center;">6.2</td>
+</tr>
+<tr>
+<td>assembly_02 ... motors_mounted.jpeg</td>
+<td style="text-align: center;">6 Oct 2026</td>
+<td style="text-align: center;">Dual TT motors</td>
+<td style="text-align: center;">6.2</td>
+</tr>
+<tr>
+<td>assembly_03 ... caster_mounted.jpeg</td>
+<td style="text-align: center;">6 Oct 2026</td>
+<td style="text-align: center;">Wheels and caster</td>
+<td style="text-align: center;">6.2</td>
+</tr>
+<tr>
+<td>assembly_04 ... wheels.jpeg</td>
+<td style="text-align: center;">6 Oct 2026</td>
+<td style="text-align: center;">Rolling base</td>
+<td style="text-align: center;">6.2</td>
+</tr>
+<tr>
+<td>assembly_05 ... rear_mount.jpeg</td>
+<td style="text-align: center;">9 Oct 2026</td>
+<td style="text-align: center;">Ultrasonic mount</td>
+<td style="text-align: center;">6.3</td>
+</tr>
+<tr>
+<td>assembly_06 ... mount_detail.jpeg</td>
+<td style="text-align: center;">9 Oct 2026</td>
+<td style="text-align: center;">Bracket detail</td>
+<td style="text-align: center;">6.3</td>
+</tr>
+<tr>
+<td>hw_arduino_uno_wired.jpg</td>
+<td style="text-align: center;">19 Oct 2026, 21:23</td>
+<td style="text-align: center;">Arduino with jumpers</td>
+<td style="text-align: center;">5.6, 6.4</td>
+</tr>
+<tr>
+<td>telemetry_live_yolo_tracking_ip_webcam.jpg</td>
+<td style="text-align: center;">19 Oct 2026, 21:36</td>
+<td style="text-align: center;">Live YOLO</td>
+<td style="text-align: center;">6.4</td>
+</tr>
+<tr>
+<td>telemetry_missionpilot_dashboard_and_terminal.jpg</td>
+<td style="text-align: center;">19 Oct 2026, 21:37</td>
+<td style="text-align: center;">Dashboard</td>
+<td style="text-align: center;">6.4</td>
+</tr>
+<tr>
+<td>assembly_07 ... bench_wiring_test.jpeg</td>
+<td style="text-align: center;">19 Oct 2026</td>
+<td style="text-align: center;">Bench wiring</td>
+<td style="text-align: center;">6.4</td>
+</tr>
+<tr>
+<td>assembly_08 ... electronics_placement.jpeg</td>
+<td style="text-align: center;">19 Oct 2026</td>
+<td style="text-align: center;">Dry-fit</td>
+<td style="text-align: center;">6.4</td>
+</tr>
+<tr>
+<td>assembly_09 ... side_view.jpeg</td>
+<td style="text-align: center;">20 Oct 2026</td>
+<td style="text-align: center;">Two-tier stack</td>
+<td style="text-align: center;">6.5</td>
+</tr>
+<tr>
+<td>assembly_10 ... top_view.jpeg</td>
+<td style="text-align: center;">20 Oct 2026</td>
+<td style="text-align: center;">Two-tier top</td>
+<td style="text-align: center;">6.5</td>
+</tr>
+<tr>
+<td>assembly_11 ... bottom_wiring_routing.jpeg</td>
+<td style="text-align: center;">20 Oct 2026</td>
+<td style="text-align: center;">Underside routing</td>
+<td style="text-align: center;">6.5</td>
+</tr>
+<tr>
+<td>test_esp32cam_wifi_stream_mobile_01.jpg</td>
+<td style="text-align: center;">22 Oct 2026, 20:08:20</td>
+<td style="text-align: center;">Wi-Fi stream</td>
+<td style="text-align: center;">6.6</td>
+</tr>
+<tr>
+<td>test_esp32cam_wifi_stream_mobile_02.jpg</td>
+<td style="text-align: center;">22 Oct 2026, 20:08:48</td>
+<td style="text-align: center;">Low light</td>
+<td style="text-align: center;">6.6</td>
+</tr>
+<tr>
+<td>assembly_12 ... insulated_joints.jpeg</td>
+<td style="text-align: center;">23 Oct 2026</td>
+<td style="text-align: center;">Insulated joints</td>
+<td style="text-align: center;">6.7</td>
+</tr>
+<tr>
+<td>hw_tb6612fng_motor_driver_top.jpg</td>
+<td style="text-align: center;">26 Oct 2026, 19:08:57</td>
+<td style="text-align: center;">TB6612FNG top</td>
+<td style="text-align: center;">5.3, 6.8</td>
+</tr>
+<tr>
+<td>hw_tb6612fng_motor_driver_pinout.jpg</td>
+<td style="text-align: center;">26 Oct 2026, 19:09:04</td>
+<td style="text-align: center;">TB6612FNG pinout</td>
+<td style="text-align: center;">5.3, 6.8</td>
+</tr>
+<tr>
+<td>assembly_13 ... damaged_shortcircuited.jpeg</td>
+<td style="text-align: center;">26 Oct 2026, after 20:14</td>
+<td style="text-align: center;">Damaged terminal</td>
+<td style="text-align: center;">6.8, 11.1</td>
+</tr>
+</tbody>
+</table>
+<p>APPENDIX D</p>
+<h1 id="test-summary">Test Summary</h1>
+<p>The test summary records the checks that were run and the evidence
+that supports each result. The host suite contains 311 passing tests;
+the table groups them by area rather than listing every case.</p>
+<table style="width:92%;">
+<caption><p><span id="_Toc244027348" class="anchor"></span>Table 33:
+Test summary by area.</p></caption>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 35%" />
+<col style="width: 21%" />
+<col style="width: 14%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Area</strong></th>
+<th style="text-align: center;"><strong>What is checked</strong></th>
+<th style="text-align: center;"><strong>Evidence</strong></th>
+<th style="text-align: center;"><strong>Result</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Decision logic</td>
+<td>Zone boundaries, deadband, no-target stop</td>
+<td style="text-align: center;">Unit tests</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Safety manager</td>
+<td>Confidence, distance, camera health, link age</td>
+<td style="text-align: center;">Unit tests</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Protocol</td>
+<td>Valid commands, invalid bytes, telemetry format</td>
+<td style="text-align: center;">Unit + integration</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Watchdog</td>
+<td>3 s expiry, reset on valid command</td>
+<td style="text-align: center;">Unit + simulation</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Ultrasonic gate</td>
+<td>15 cm refusal, timeout handling</td>
+<td style="text-align: center;">Unit + simulation</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Logging</td>
+<td>CSV schema, timestamp monotonicity</td>
+<td style="text-align: center;">Integration</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Detector</td>
+<td>Recall, precision, F1, mAP, latency</td>
+<td style="text-align: center;">Benchmark JSON</td>
+<td style="text-align: center;">Measured</td>
+</tr>
+<tr>
+<td>Event log</td>
+<td>Ten invariants, zero violations</td>
+<td style="text-align: center;">logs/eval.json</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Firmware build</td>
+<td>Arduino and ESP32 compile</td>
+<td style="text-align: center;">arduino-cli</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+<tr>
+<td>Hardware</td>
+<td>Continuity, voltage, motor direction, stop</td>
+<td style="text-align: center;">Bench</td>
+<td style="text-align: center;">Partial</td>
+</tr>
+</tbody>
+</table>
+<p>The hardware row is marked partial because the final TB6612FNG build
+has not completed the full campaign. The continuity and voltage checks
+were performed, and the motor direction was verified on the bench, but
+the runtime, current, and stopping-distance tests remain pending. This
+is the main open item before the rover can be described as fully
+characterised.</p>
+<p>APPENDIX E</p>
+<h1 id="repository-map-and-reproduction-notes">Repository Map and
+Reproduction Notes</h1>
+<p>The repository is organised so that the report, the firmware, the
+host software, the tests, and the evidence can be found without
+guessing. The table below is a map, not an exhaustive listing.</p>
+<table style="width:97%;">
+<caption><p><span id="_Toc244027349" class="anchor"></span>Table 34:
+Repository map for reproduction and review.</p></caption>
+<colgroup>
+<col style="width: 34%" />
+<col style="width: 62%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><strong>Path</strong></th>
+<th style="text-align: center;"><strong>Contents</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>arduino/rover_controller/</td>
+<td>Arduino safety and motor firmware</td>
+</tr>
+<tr>
+<td>esp32/camera_stream/</td>
+<td>ESP32-CAM MJPEG firmware</td>
+</tr>
+<tr>
+<td>src/</td>
+<td>Host perception, decision, safety, and dashboard code</td>
+</tr>
+<tr>
+<td>tests/</td>
+<td>Unit, integration, and end-to-end tests</td>
+</tr>
+<tr>
+<td>config/</td>
+<td>YAML configuration for camera, model, thresholds, and serial</td>
+</tr>
+<tr>
+<td>logs/</td>
+<td>Event logs and benchmark JSON evidence</td>
+</tr>
+<tr>
+<td>figures/</td>
+<td>Architecture, wiring, and chart images</td>
+</tr>
+<tr>
+<td>images/</td>
+<td>Component, assembly, and telemetry photographs</td>
+</tr>
+<tr>
+<td>docs/</td>
+<td>Technical notes, build guide, pin map, and failure analysis</td>
+</tr>
+<tr>
+<td>tools/</td>
+<td>Report generation and utility scripts</td>
+</tr>
+<tr>
+<td>reports/</td>
+<td>Generated DOCX/PDF reports and processed assets</td>
+</tr>
+</tbody>
+</table>
+<p>To reproduce the report, run `py -3.12
+tools/generate_story_report.py` from the repository root, then open the
+generated DOCX in Word and update the table of contents, list of
+figures, and list of tables. The PDF is exported from the updated DOCX.
+The images are resized into `reports/assets/` so that the DOCX does not
+depend on the original file locations.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>Reproduction checklist</strong></p>
+<p>1. Confirm the Python 3.12 environment has python-docx, Pillow,
+matplotlib, and numpy. 2. Confirm the source images and benchmark JSON
+files are present. 3. Run the report generator. 4. Update the Word
+fields. 5. Export the PDF. 6. Verify the page count, figure numbering,
+and table numbering.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+</body>
+</html>

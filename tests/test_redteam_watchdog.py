@@ -18,9 +18,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from software.control.steering import SearchRotation
 from software.hardware.arduino_serial import ArduinoSerial
 from software.main import RoverApp
-from software.navigation.target_search import TargetSearch
 from software.safety.manual_guard import ManualMotionGuard
 from software.utils.config_loader import load_config
 
@@ -204,14 +204,14 @@ def test_search_rotation_cap_is_reachable_within_its_own_timeout():
 
 
 def test_search_always_terminates():
-    s = TargetSearch(timeout_s=0.5, max_rotations=100, rotation_duration_s=0.1)
+    s = SearchRotation(timeout_s=0.5, max_rotations=100, rotation_duration_s=0.1)
     s.start(now=0.0)
     cmd, done, _ = s.update(False, now=10.0)
     assert done and cmd == "S"
 
 
 def test_search_stops_immediately_when_target_appears():
-    s = TargetSearch()
+    s = SearchRotation()
     s.start(now=0.0)
     cmd, done, msg = s.update(True, now=0.1)
     assert done and cmd == "S" and "found" in msg

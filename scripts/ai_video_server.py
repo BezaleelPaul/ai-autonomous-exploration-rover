@@ -1,4 +1,4 @@
-"""AI video annotation server: live YOLO boxes for the rover's Wi-Fi pad.
+﻿"""AI video annotation server: live YOLO boxes for the rover's Wi-Fi pad.
 
 Sits between the phone's IP Webcam stream and the rover control pad:
 
@@ -29,6 +29,7 @@ import threading
 import time
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import parse_qs, urlparse
 
 import cv2
 import numpy as np
@@ -36,7 +37,10 @@ import numpy as np
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]))
 
 from software.ai.detector import BaseDetector, create_detector
-from software.perception_node.stream import open_ip_webcam
+from software.perception_node.stream import (
+    open_ip_webcam,
+    validate_stream_url,
+)
 
 MJPEG_FPS = 12.0
 STATUS_JSON = "application/json"
@@ -44,7 +48,7 @@ STATUS_JSON = "application/json"
 
 @dataclass
 class Shared:
-    """Latest-frame slot shared between the grabber/detector and HTTP."""
+    """Latest-frame slot + live-source URL shared across threads."""
 
     lock: threading.Lock
     annotated: np.ndarray | None = None
@@ -52,6 +56,7 @@ class Shared:
     detections: int = 0
     infer_fps: float = 0.0
     model_name: str = ""
+    source: str = ""
 
     def publish(self, frame: np.ndarray, count: int, fps: float, ok: bool) -> None:
         with self.lock:
@@ -64,6 +69,15 @@ class Shared:
         with self.lock:
             frame = None if self.annotated is None else self.annotated.copy()
             return frame, self.source_ok, self.detections, self.infer_fps
+
+    def set_source(self, url: str) -> str:
+        with self.lock:
+            self.source = url
+            return self.source
+
+    def get_source(self) -> str:
+        with self.lock:
+            return self.source
 
 
 def placeholder_frame(text: str) -> np.ndarray:
@@ -120,23 +134,25 @@ def draw_detections(frame: np.ndarray, detections, target: str) -> np.ndarray:
 
 
 def detect_loop(
-    url: str,
     detector: BaseDetector,
     shared: Shared,
     target: str,
     mock: bool,
     cam: int = -1,
 ) -> None:
-    """Owns the frame source (webcam or IP Webcam client): grab -> YOLO -> slot."""
+    """Owns the frame source (webcam or IP Webcam client): grab -> YOLO -> slot.
+
+    The source URL lives in ``shared`` and can be replaced live via /set: the
+    client is rebuilt whenever the URL changes (mock and webcam modes ignore
+    the URL).
+    """
     cap = None
     stream = None
+    current_url = ""
     if cam >= 0:
         cap = cv2.VideoCapture(cam)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    else:
-        stream = open_ip_webcam(url, mock=mock)
-        stream.open()
     ema = 0.0
     while True:
         started = time.time()
@@ -150,12 +166,24 @@ def detect_loop(
                 cap = cv2.VideoCapture(cam)
                 frame = None
         else:
+            url = shared.get_source()
+            if mock and stream is None:
+                stream = open_ip_webcam("mock://selftest", mock=True)
+                stream.open()
+            elif not mock and url != current_url:
+                try:
+                    current_url = validate_stream_url(url)
+                except ValueError:
+                    current_url = ""
+                if current_url:
+                    stream = open_ip_webcam(current_url)
+                    stream.open()
             try:
-                frame = stream.read()
+                frame = stream.read() if stream is not None else None
             except Exception:
                 frame = None
         if frame is None:
-            text = "NO WEBCAM" if cam >= 0 else f"NO STREAM  {url}"
+            text = "NO WEBCAM" if cam >= 0 else f"NO STREAM  {current_url}"
             frame = placeholder_frame(text)
             count = 0
         else:
@@ -207,9 +235,16 @@ STATUS_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
 <body style="background:#111;color:#eee;font-family:monospace">
 <h2 style="color:#7c7">AI VIDEO SERVER</h2>
 <p>Paste this URL into the rover pad CAMERA panel:<br>
-<b style="color:#fc6;font-size:1.2em">{base}/video</b></p>
-<p>source ok: <b>{ok}</b> | objects: <b>{objects}</b> | infer: <b>{fps} fps</b><br>
-model: {model}</p>
+<b style="color:#fc6;font-size:1.2em">@@BASE@@/video</b></p>
+<p>source ok: <b>@@OK@@</b> | objects: <b>@@OBJECTS@@</b> |
+infer: <b>@@FPS@@ fps</b><br>model: @@MODEL@@</p>
+<p>change the stream address (no restart needed):<br>
+<input id="u" size="44" value="@@SOURCE@@">
+<button onclick="fetch('/set?u='+encodeURIComponent(
+ document.getElementById('u').value)).then(function(r){return r.json()})
+ .then(function(j){document.getElementById('setmsg').textContent=
+ j.ok?'source set: '+j.source:'rejected: '+j.error;});">SET SOURCE</button>
+<span id="setmsg" style="color:#8f8"></span></p>
 <p><img src="/video" style="max-width:640px;border:1px solid #333"></p>
 </body></html>"""
 
@@ -217,7 +252,8 @@ model: {model}</p>
 def make_handler(shared: Shared, model_name: str):
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
-            if self.path == "/state":
+            parsed = urlparse(self.path)
+            if parsed.path == "/state":
                 _, ok, count, fps = shared.snapshot()
                 body = (
                     '{"ok":'
@@ -228,19 +264,38 @@ def make_handler(shared: Shared, model_name: str):
                     + f"{fps:.1f}"
                     + ',"model":"'
                     + model_name
+                    + '","source":"'
+                    + shared.get_source()
                     + '"}'
                 )
                 self._send(200, STATUS_JSON, body.encode())
-            elif self.path == "/video":
+            elif parsed.path == "/video":
                 self._stream()
-            elif self.path.startswith("/"):
+            elif parsed.path == "/set":
+                args = parse_qs(parsed.query)
+                raw = (args.get("u") or [""])[0]
+                try:
+                    valid = validate_stream_url(raw)
+                except ValueError as exc:
+                    body = '{"ok":false,"error":"' + str(exc).replace('"', "'") + '"}'
+                    self._send(400, STATUS_JSON, body.encode())
+                    return
+                source = shared.set_source(valid)
+                print("source ->", source)
+                body = '{"ok":true,"source":"' + source + '"}'
+                self._send(200, STATUS_JSON, body.encode())
+            elif parsed.path == "/":
                 _, ok, count, fps = shared.snapshot()
-                html = STATUS_PAGE.format(
-                    base=f"http://{self.server.server_address[0]}:{self.server.server_port}",
-                    ok=ok,
-                    objects=count,
-                    fps=f"{fps:.1f}",
-                    model=model_name,
+                html = (
+                    STATUS_PAGE.replace(
+                        "@@BASE@@",
+                        f"http://{self.server.server_address[0]}:{self.server.server_port}",
+                    )
+                    .replace("@@OK@@", str(ok).lower())
+                    .replace("@@OBJECTS@@", str(count))
+                    .replace("@@FPS@@", f"{fps:.1f}")
+                    .replace("@@MODEL@@", model_name)
+                    .replace("@@SOURCE@@", shared.get_source())
                 )
                 self._send(200, "text/html", html.encode())
             else:
@@ -339,9 +394,22 @@ def main(argv: list[str] | None = None) -> int:
 
             with open("config/config.yaml", encoding="utf-8") as handle:
                 cfg = yaml.safe_load(handle) or {}
-            args.url = cfg.get("perception", {}).get("stream_url", "")
+            default_url = cfg.get("perception", {}).get("stream_url", "")
         except OSError:
-            args.url = ""
+            default_url = ""
+        # User input wins: interactive prompt, config URL only as fallback.
+        try:
+            if sys.stdin is None or not sys.stdin.isatty():
+                args.url = default_url
+            else:
+                args.url = (
+                    input(
+                        f"Stream URL (phone IP Webcam) [Enter = {default_url or 'empty'}]: "
+                    ).strip()
+                    or default_url
+                )
+        except EOFError:
+            args.url = default_url
     if not args.url and not args.mock and args.cam < 0:
         parser.error("--url is required (or use --mock or --cam)")
     if args.classes:
@@ -350,9 +418,10 @@ def main(argv: list[str] | None = None) -> int:
     print(f"loading model {args.model} (mock={args.mock})...")
     detector = build_detector(args)
     shared = Shared(lock=threading.Lock(), model_name=args.model)
+    shared.set_source(args.url or "")
     threading.Thread(
         target=detect_loop,
-        args=(args.url, detector, shared, args.target, args.mock, args.cam),
+        args=(detector, shared, args.target, args.mock, args.cam),
         daemon=True,
     ).start()
 

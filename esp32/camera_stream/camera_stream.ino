@@ -6,8 +6,10 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASS "YOUR_WIFI_PASSWORD"
+#define WIFI_SSID "OPPOK13"
+#define WIFI_PASS "pyvf9689"
+#define AP_NAME   "AI_Rover_Cam"
+#define AP_PASS   "12345678"
 
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
@@ -29,6 +31,7 @@
 #include "esp_http_server.h"
 
 httpd_handle_t stream_httpd = NULL;
+bool apMode = false;
 
 static esp_err_t stream_handler(httpd_req_t *req) {
   httpd_resp_set_type(req, "multipart/x-mixed-replace;boundary=frame");
@@ -63,11 +66,23 @@ void setup() {
   c.pin_href=HREF_GPIO_NUM; c.pin_sscb_sda=SIOD_GPIO_NUM; c.pin_sscb_scl=SIOC_GPIO_NUM;
   c.pin_pwdn=PWDN_GPIO_NUM; c.pin_reset=RESET_GPIO_NUM;
   c.xclk_freq_hz=20000000; c.pixel_format=PIXFORMAT_JPEG;
-  c.frame_size=FRAMESIZE_VGA; c.jpeg_quality=12; c.fb_count=2;
+  c.frame_size=FRAMESIZE_XGA; c.jpeg_quality=8; c.fb_count=2;
   if (esp_camera_init(&c) != ESP_OK) { Serial.println("CAM FAIL"); return; }
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  int t=0; while (WiFi.status()!=WL_CONNECTED && t<60) { delay(500); t++; }
-  Serial.println(WiFi.localIP());
+  apMode = (String(WIFI_SSID) == "YOUR_WIFI_SSID");
+  if (apMode) {
+    WiFi.mode(WIFI_AP);
+    if (!WiFi.softAP(AP_NAME, AP_PASS)) { Serial.println("AP FAIL"); return; }
+    Serial.print("AP mode. Join '");
+    Serial.print(AP_NAME);
+    Serial.println("' (pass " AP_PASS ") then open:");
+    Serial.print("http://");
+    Serial.print(WiFi.softAPIP());
+    Serial.println(":81/stream");
+  } else {
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    int t=0; while (WiFi.status()!=WL_CONNECTED && t<60) { delay(500); t++; }
+    Serial.println(WiFi.localIP());
+  }
   start_server();
 }
 
@@ -76,6 +91,7 @@ void loop() {
   static unsigned long lastCheck = 0;
   if (millis() - lastCheck >= 5000) {
     lastCheck = millis();
+    if (apMode) return;  // AP mode: no STA reconnect needed
     if (WiFi.status() != WL_CONNECTED) {
       Serial.println("WIFI: lost, reconnecting...");
       WiFi.disconnect();

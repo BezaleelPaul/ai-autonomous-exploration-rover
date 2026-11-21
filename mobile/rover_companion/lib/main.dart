@@ -239,8 +239,10 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   Future<void> _autoDetectServer() async {
     setState(() => _isScanning = true);
     final candidates = [
-      "http://192.168.4.2:5000",   // Laptop when connected to ESP32 Rover Wi-Fi
+      "http://192.168.4.2:5000",   // Laptop on ESP32 Rover Wi-Fi (connected 1st)
+      "http://192.168.4.3:5000",   // Laptop on ESP32 Rover Wi-Fi (connected 2nd)
       "http://192.168.1.11:5000",  // Laptop on Home Wi-Fi LAN
+      "http://10.42.0.1:5000",     // Laptop on Ubuntu Wi-Fi Hotspot
       "http://192.168.4.1",        // Direct ESP32 Soft-AP
       "http://localhost:5000",
     ];

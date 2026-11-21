@@ -1,7 +1,12 @@
 # AI Visual Smart Rover — SEE → UNDERSTAND → DECIDE → ACT → STAY SAFE
 
+[![Build & Release APK](https://github.com/BezaleelPaul/ai-autonomous-exploration-rover/actions/workflows/release-apk.yml/badge.svg)](https://github.com/BezaleelPaul/ai-autonomous-exploration-rover/actions/workflows/release-apk.yml)
+[![Mobile Companion APK](https://img.shields.io/badge/Release-APK%20Download-brightgreen?logo=android)](https://github.com/BezaleelPaul/ai-autonomous-exploration-rover/releases)
+
 Low-cost academic proof-of-concept: ESP32-CAM (video) + Laptop (AI/vision/decisions)
 + Arduino UNO (motors/ultrasonic safety) + L298N + HC-SR04. No SLAM/LiDAR/ROS/training.
+
+> **📱 Mobile Companion App (Android)**: Available under [GitHub Releases](https://github.com/BezaleelPaul/ai-autonomous-exploration-rover/releases) as `airover-companion-*.apk`. Features QR code pairing, live telemetry HUD, camera controls, touch D-Pad, and hardware E-Stop.
 
 ## 1. Overview / Architecture
 See docs/architecture.md. Closed loop PERCEPTION→DECISION→SAFETY→CONTROL→FEEDBACK.

@@ -531,3 +531,10 @@ def test_api_frame_accepts_jpeg_and_updates_feed():
     res_bad = client.post("/api/frame", data=b"not_a_jpeg_image", content_type="image/jpeg")
     assert res_bad.status_code == 400
 
+    # Manifest endpoint
+    res_manifest = client.get("/manifest.json")
+    assert res_manifest.status_code == 200
+    m_data = res_manifest.get_json()
+    assert m_data["short_name"] == "RoverLink"
+    assert m_data["display"] == "standalone"
+

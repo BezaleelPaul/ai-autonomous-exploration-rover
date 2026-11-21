@@ -7,6 +7,11 @@ COMPANION_PAGE = """<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#00f2fe">
+  <link rel="manifest" href="/manifest.json">
   <title>RoverLink — Mobile Companion & AR HUD</title>
   <style>
     * { box-sizing: border-box; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -120,7 +125,11 @@ COMPANION_PAGE = """<!doctype html>
 <body>
   <header>
     <div class="brand">&#9670; ROVERLINK AR HUD</div>
-    <div id="conn-pill" class="badge">CONNECTING…</div>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <span id="ping-pill" style="font-size:10px;color:#64748b;font-weight:bold;">PING: —</span>
+      <span id="batt-pill" style="font-size:10px;color:#10b981;font-weight:bold;">⚡ 7.4V</span>
+      <div id="conn-pill" class="badge">CONNECTING…</div>
+    </div>
   </header>
 
   <div id="viewports">
@@ -130,6 +139,9 @@ COMPANION_PAGE = """<!doctype html>
       <div id="dist-box" class="hud-box">
         <div>DISTANCE</div>
         <div id="dist-val" class="hud-val">— cm</div>
+      </div>
+      <div class="hud-box" style="display:flex;align-items:center;gap:4px;padding:3px 6px;">
+        <canvas id="mini-radar" width="68" height="42" style="background:#000;border:1px solid #1e293b;border-radius:4px;"></canvas>
       </div>
       <div class="hud-box" style="text-align:right;">
         <div>AUTONOMY</div>
@@ -436,11 +448,60 @@ COMPANION_PAGE = """<!doctype html>
       } catch (e) {}
     });
 
+    // Top-down Sonar Radar Sweep Minimap
+    const radarCanvas = document.getElementById("mini-radar");
+    const rCtx = radarCanvas.getContext("2d");
+    let sweepAngle = -0.6;
+    let sweepDir = 0.04;
+    let lastKnownDistance = null;
+
+    function drawMiniRadar(cm) {
+      const w = radarCanvas.width, h = radarCanvas.height;
+      rCtx.fillStyle = "rgba(0, 5, 10, 0.45)";
+      rCtx.fillRect(0, 0, w, h);
+
+      const cx = w / 2, cy = h - 3;
+      const maxR = h - 5;
+
+      // Range rings
+      rCtx.strokeStyle = "#1e293b";
+      rCtx.lineWidth = 1;
+      rCtx.beginPath(); rCtx.arc(cx, cy, maxR * 0.4, Math.PI, 2 * Math.PI); rCtx.stroke();
+      rCtx.beginPath(); rCtx.arc(cx, cy, maxR * 0.75, Math.PI, 2 * Math.PI); rCtx.stroke();
+      rCtx.beginPath(); rCtx.arc(cx, cy, maxR, Math.PI, 2 * Math.PI); rCtx.stroke();
+
+      // Sweep Beam
+      sweepAngle += sweepDir;
+      if (sweepAngle > 0.6 || sweepAngle < -0.6) sweepDir = -sweepDir;
+      rCtx.strokeStyle = "rgba(0, 242, 254, 0.5)";
+      rCtx.beginPath();
+      rCtx.moveTo(cx, cy);
+      rCtx.lineTo(cx + maxR * Math.sin(sweepAngle), cy - maxR * Math.cos(sweepAngle));
+      rCtx.stroke();
+
+      // Rover center
+      rCtx.fillStyle = "#00f2fe";
+      rCtx.beginPath(); rCtx.arc(cx, cy, 2.5, 0, 2 * Math.PI); rCtx.fill();
+
+      // Obstacle Blip
+      if (cm != null && cm > 0 && cm < 120) {
+        const normDist = Math.min(1.0, cm / 75.0);
+        const obR = Math.max(6, normDist * maxR);
+        rCtx.fillStyle = cm < 25 ? "#ef4444" : (cm < 45 ? "#f59e0b" : "#10b981");
+        rCtx.beginPath();
+        rCtx.arc(cx, cy - obR, 3.5, 0, 2 * Math.PI);
+        rCtx.fill();
+      }
+    }
+    setInterval(() => drawMiniRadar(lastKnownDistance), 80);
+
     // Distance HUD and Proximity Haptics
     function updateDistanceHUD(cm) {
       if (cm != null) {
+        lastKnownDistance = cm;
         const rounded = Math.round(cm);
         document.getElementById("dist-val").textContent = rounded + " cm";
+        drawMiniRadar(rounded);
         if (rounded < 25) {
           distBox.classList.add("alert-flash");
           if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
@@ -481,10 +542,18 @@ COMPANION_PAGE = """<!doctype html>
     });
 
     // Poller fallback
+    let lastPingMs = 0;
     async function pollState() {
+      const t0 = performance.now();
       try {
         const res = await fetch("/api/state");
         const data = await res.json();
+        lastPingMs = Math.round(performance.now() - t0);
+        const pingPill = document.getElementById("ping-pill");
+        if (pingPill) {
+          pingPill.textContent = "PING: " + lastPingMs + "ms";
+          pingPill.style.color = (lastPingMs < 40) ? "#10b981" : "#f59e0b";
+        }
         if (data.client_ip) myClientIp = data.client_ip;
         const connPill = document.getElementById("conn-pill");
         connPill.textContent = "LINK OK";

@@ -142,6 +142,25 @@ def create_control_app(
         from software.dashboard.companion_page import COMPANION_PAGE
         return COMPANION_PAGE
 
+    @app.get("/manifest.json")
+    def manifest():
+        return jsonify({
+            "name": "RoverLink AR Companion",
+            "short_name": "RoverLink",
+            "start_url": "/companion",
+            "display": "standalone",
+            "background_color": "#080a0f",
+            "theme_color": "#00f2fe",
+            "orientation": "portrait",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f131a'/><polygon points='50,15 85,80 15,80' fill='%2300f2fe'/><circle cx='50' cy='55' r='12' fill='%2310b981'/></svg>",
+                    "sizes": "192x192 512x512",
+                    "type": "image/svg+xml"
+                }
+            ]
+        })
+
     @app.get("/api/qr")
     def qr_code():
         import io

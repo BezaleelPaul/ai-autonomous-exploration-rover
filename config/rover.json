@@ -1,0 +1,26 @@
+{
+  "gateway": "http://192.168.4.1",
+  "camera": "http://192.168.4.2:8080/video",
+  "weights": "models/rover24.onnx",
+  "imgsz": 320,
+  "conf": 0.35,
+  "device": "cpu",
+  "classes": [],
+  "max_fps": 5.0,
+  "heartbeat_s": 0.2,
+  "max_frame_age_s": 1.5,
+  "stream_port": 8080,
+  "dry_run": false,
+  "zones": {
+    "left_bound": 0.33,
+    "right_bound": 0.66,
+    "stop_area": 0.28,
+    "hysteresis": 0.05,
+    "min_conf": 0.35,
+    "target_classes": [],
+    "speed": 140,
+    "switch_frames": 2,
+    "no_target_cmd": "S",
+    "ttc_stop_s": 0.8
+  }
+}

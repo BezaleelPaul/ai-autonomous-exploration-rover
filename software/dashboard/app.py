@@ -135,6 +135,35 @@ def create_control_app(
 
         return DECK_PAGE
 
+    @app.get("/companion")
+    @app.get("/mobile")
+    def companion():
+        from software.dashboard.companion_page import COMPANION_PAGE
+        return COMPANION_PAGE
+
+    @app.get("/api/qr")
+    def qr_code():
+        import io
+        import socket
+        import qrcode
+        from flask import Response
+
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            lan_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            lan_ip = "127.0.0.1"
+
+        port = request.host.split(":")[-1] if ":" in request.host else "5000"
+        url = f"http://{lan_ip}:{port}/companion"
+
+        img = qrcode.make(url)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return Response(buf.getvalue(), mimetype="image/png")
+
     @app.get("/video_feed")
     def video_feed():
         if feed is None:

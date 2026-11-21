@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AeroPulse Orbital Deck | Autonomous Planetary Telemetry</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- GSAP 3 CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <!-- Custom Cockpit Styles -->
+  <link rel="stylesheet" href="/static/css/cockpit.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#07090e',
+            cyberCyan: '#00f2fe',
+            neonEmerald: '#10b981',
+            amberAlert: '#f59e0b',
+            deepSpace: '#0d131f'
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-obsidian text-slate-100 font-mono overflow-x-hidden relative selection:bg-cyberCyan selection:text-black">
+
+  <!-- Background Meteor & Starfield Canvas (Aceternity Style) -->
+  <canvas id="meteor-canvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
+  
+  <!-- Film Grain Noise Canvas (Codrops Style) -->
+  <canvas id="noise-canvas" class="fixed inset-0 pointer-events-none z-50 opacity-20"></canvas>
+
+  <!-- Custom HUD Reticle Follower -->
+  <div id="hud-reticle" class="fixed pointer-events-none z-40 w-8 h-8 border border-cyberCyan/50 rounded-full -translate-x-1/2 -translate-y-1/2 transition-transform duration-75 ease-out">
+    <div class="absolute inset-0 flex items-center justify-center">
+      <div class="w-1 h-1 bg-cyberCyan rounded-full"></div>
+    </div>
+  </div>
+
+  <!-- Radial Spotlight Follower (Aceternity Style) -->
+  <div id="spotlight" class="fixed pointer-events-none z-10 w-[600px] h-[600px] rounded-full -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 blur-3xl"></div>
+
+  <!-- Main Cockpit Container -->
+  <div class="relative z-20 min-h-screen flex flex-col p-4 md:p-8 max-w-[1600px] mx-auto space-y-6">
+
+    <!-- Top Navigation & Mission Status Header -->
+    <header class="flex flex-col md:flex-row items-start md:items-center justify-between border-b border-cyan-900/40 pb-4 gap-4">
+      <div class="flex items-center space-x-4">
+        <div class="relative flex items-center justify-center w-12 h-12 rounded-lg bg-cyberCyan/10 border border-cyberCyan/40 shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+          <svg class="w-6 h-6 text-cyberCyan animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-xl md:text-2xl font-bold tracking-wider text-white">AEROPULSE // ORBITAL DECK</h1>
+            <span class="px-2 py-0.5 text-xs rounded bg-cyan-950/80 border border-cyberCyan/40 text-cyberCyan font-bold">V11.4 PRO</span>
+          </div>
+          <p class="text-xs text-slate-400">PLANETARY ROVER FLEET & VISION AI TELEMETRY CONSOLE</p>
+        </div>
+      </div>
+
+      <!-- Scrambler Status Badges -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="px-3 py-1.5 rounded border border-slate-800 bg-deepSpace/80 flex items-center space-x-2">
+          <span class="text-xs text-slate-500">SOL TIME:</span>
+          <span id="sol-display" class="text-sm font-bold text-cyberCyan">SOL 342 // 00:00:00</span>
+        </div>
+        <div class="px-3 py-1.5 rounded border border-emerald-900/60 bg-emerald-950/30 flex items-center space-x-2">
+          <div class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></div>
+          <span id="mode-badge" class="text-sm font-bold text-emerald-400">AUTONOMOUS</span>
+        </div>
+        <div class="px-3 py-1.5 rounded border border-slate-800 bg-deepSpace/80 flex items-center space-x-2">
+          <span class="text-xs text-slate-500">YOLO INFERENCE:</span>
+          <span id="inference-time" class="text-sm font-bold text-white">14.8 ms</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Aceternity Bento Grid Layout -->
+    <main class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 flex-grow">
+
+      <!-- Panel 1: Interactive 3D Rover Attitude Card (Aceternity 3D Card) -->
+      <div class="card-3d-wrap lg:col-span-1 rounded-2xl p-[1px] bg-gradient-to-b from-cyan-500/30 via-slate-800/40 to-transparent shadow-xl">
+        <div id="card-attitude" class="card-3d relative h-full w-full rounded-2xl bg-deepSpace/90 border border-slate-800/80 p-5 flex flex-col justify-between overflow-hidden backdrop-blur-xl">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <span class="text-xs font-bold text-cyberCyan tracking-widest">// ATTITUDE GYRO (3D)</span>
+            <span class="text-[10px] text-slate-500 font-sans">IMU 6-AXIS</span>
+          </div>
+          
+          <!-- 3D Artificial Horizon Sphere -->
+          <div class="my-6 relative flex items-center justify-center">
+            <div id="gyro-sphere" class="w-44 h-44 rounded-full border-2 border-cyan-500/40 relative flex items-center justify-center shadow-[inset_0_0_30px_rgba(0,242,254,0.15)] transition-transform duration-100 ease-out">
+              <div class="absolute w-full h-[1px] bg-cyan-400/60"></div>
+              <div class="absolute h-full w-[1px] bg-cyan-400/60"></div>
+              <div class="w-28 h-28 rounded-full border border-dashed border-cyan-300/30"></div>
+              <div id="gyro-pointer" class="w-8 h-8 border-2 border-cyberCyan rounded-sm rotate-45 transition-transform duration-75"></div>
+            </div>
+          </div>
+
+          <!-- Gyroscope Numeric Readouts -->
+          <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/60 text-center">
+            <div class="bg-obsidian/60 p-2 rounded border border-slate-800/40">
+              <div class="text-[10px] text-slate-500">PITCH</div>
+              <div id="pitch-val" class="text-sm font-bold text-cyberCyan">1.20°</div>
+            </div>
+            <div class="bg-obsidian/60 p-2 rounded border border-slate-800/40">
+              <div class="text-[10px] text-slate-500">ROLL</div>
+              <div id="roll-val" class="text-sm font-bold text-emerald-400">-0.80°</div>
+            </div>
+            <div class="bg-obsidian/60 p-2 rounded border border-slate-800/40">
+              <div class="text-[10px] text-slate-500">YAW</div>
+              <div id="yaw-val" class="text-sm font-bold text-amber-400">142.5°</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Real-Time Radar & Perception Scanner (Codrops Interactive Visuals) -->
+      <div class="card-3d-wrap lg:col-span-2 rounded-2xl p-[1px] bg-gradient-to-b from-indigo-500/30 via-slate-800/40 to-transparent shadow-xl">
+        <div class="relative h-full w-full rounded-2xl bg-deepSpace/90 border border-slate-800/80 p-5 flex flex-col justify-between backdrop-blur-xl">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold text-indigo-400 tracking-widest">// PERCEPTION & LIDAR SWEEP</span>
+              <span class="px-1.5 py-0.5 text-[9px] rounded bg-indigo-950 border border-indigo-700/50 text-indigo-300">YOLOv11 ACTIVE</span>
+            </div>
+            <span id="target-count" class="text-xs text-cyberCyan font-bold">3 TARGETS TRACKED</span>
+          </div>
+
+          <!-- Interactive Radar Canvas -->
+          <div class="relative my-4 flex items-center justify-center">
+            <canvas id="radar-canvas" width="460" height="280" class="w-full h-64 rounded-xl bg-obsidian/90 border border-slate-800/80 shadow-inner"></canvas>
+            <div class="absolute top-3 left-3 text-[10px] text-slate-500">RANGE: 25.0 M</div>
+            <div class="absolute bottom-3 right-3 text-[10px] text-cyan-400 font-bold">FOV: 120° AZIMUTH</div>
+          </div>
+
+          <!-- Detection Details Feed -->
+          <div id="detection-list" class="grid grid-cols-1 md:grid-cols-3 gap-2">
+            <!-- Populated via Javascript -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Power Distribution & Propulsion Matrix -->
+      <div class="card-3d-wrap lg:col-span-1 rounded-2xl p-[1px] bg-gradient-to-b from-emerald-500/30 via-slate-800/40 to-transparent shadow-xl">
+        <div class="relative h-full w-full rounded-2xl bg-deepSpace/90 border border-slate-800/80 p-5 flex flex-col justify-between backdrop-blur-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <span class="text-xs font-bold text-emerald-400 tracking-widest">// POWER & PROPULSION</span>
+            <span class="text-[10px] text-slate-500">6x BRUSHLESS</span>
+          </div>
+
+          <!-- Battery Meter -->
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400">BATTERY SOC</span>
+              <span id="battery-pct" class="font-bold text-emerald-400">94.2%</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-3 border border-slate-800 p-0.5">
+              <div id="battery-bar" class="bg-gradient-to-r from-emerald-500 to-cyberCyan h-full rounded-full transition-all duration-300" style="width: 94.2%;"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+              <span id="battery-v">28.4 V</span>
+              <span id="battery-a">3.8 A DRAW</span>
+              <span id="battery-temp">22.4 °C</span>
+            </div>
+          </div>
+
+          <!-- 6-Wheel Motor RPM Grid -->
+          <div>
+            <div class="text-[10px] text-slate-400 mb-2">WHEEL MOTORS (RPM):</div>
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+              <div class="bg-obsidian/70 p-2 rounded border border-slate-800"><div class="text-[9px] text-slate-500">FL</div><div id="m-fl" class="font-bold text-cyan-300">120</div></div>
+              <div class="bg-obsidian/70 p-2 rounded border border-slate-800"><div class="text-[9px] text-slate-500">ML</div><div id="m-ml" class="font-bold text-cyan-300">118</div></div>
+              <div class="bg-obsidian/70 p-2 rounded border border-slate-800"><div class="text-[9px] text-slate-500">RL</div><div id="m-rl" class="font-bold text-cyan-300">122</div></div>
+              <div class="bg-obsidian/70 p-2 rounded border border-slate-800"><div class="text-[9px] text-slate-500">FR</div><div id="m-fr" class="font-bold text-cyan-300">119</div></div>
+              <div class="bg-obsidian/70 p-2 rounded border border-slate-800"><div class="text-[9px] text-slate-500">MR</div><div id="m-mr" class="font-bold text-cyan-300">121</div></div>
+              <div class="bg-obsidian/70 p-2 rounded border border-slate-800"><div class="text-[9px] text-slate-500">RR</div><div id="m-rr" class="font-bold text-cyan-300">120</div></div>
+            </div>
+          </div>
+
+          <!-- Mission Command Magnetic Action Buttons (Codrops Style) -->
+          <div class="pt-2 border-t border-slate-800/80 space-y-2">
+            <button id="btn-dispatch" class="magnetic-btn w-full py-2.5 px-4 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyberCyan border border-cyan-500/40 text-xs font-bold tracking-wider transition-all shadow-[0_0_15px_rgba(0,242,254,0.15)] flex items-center justify-center space-x-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+              <span>QUEUE NEXT WAYPOINT</span>
+            </button>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btn-hold" class="magnetic-btn py-2 px-3 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amberAlert border border-amberAlert/40 text-[11px] font-bold tracking-wide">
+                HOLD (E-STOP)
+              </button>
+              <button id="btn-auto" class="magnetic-btn py-2 px-3 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[11px] font-bold tracking-wide">
+                RESUME AUTO
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Mission Log & Scrubber Timeline (GSAP ScrollTrigger Pinned) -->
+    <footer class="rounded-xl border border-slate-800 bg-deepSpace/60 p-4 backdrop-blur-lg flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4">
+      <div class="flex items-center space-x-3">
+        <span class="text-cyberCyan font-bold">// SYSTEM:</span>
+        <span id="log-scramble" class="text-slate-300">ALL SUBSYSTEMS NOMINAL. EDGE ROBOTICS BUS SYNCHRONIZED.</span>
+      </div>
+      <div class="flex items-center space-x-6">
+        <span class="text-slate-500">ANTIGRAVITY HARNESS ENGINE V2.4</span>
+        <a href="/.archify/architecture.html" target="_blank" class="text-cyberCyan hover:underline font-bold">VIEW ARCHITECTURE &rarr;</a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Cockpit Interaction Scripts -->
+  <script src="/static/js/radar.js"></script>
+  <script src="/static/js/cockpit.js"></script>
+</body>
+</html>

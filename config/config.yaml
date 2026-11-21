@@ -27,8 +27,8 @@ camera:
 ai:
   model_name: "facebook/detr-resnet-50"
   model_dir: "models/detr-resnet-50"
-  yolo_model: "yolov8m-worldv2.pt"  # Medium Open-Vocabulary Vision Transformer (27.8M params)
-  export: "openvino"        # inference engine: torch | onnx | openvino.
+  yolo_model: "yolo11n.pt"
+  export: "torch"        # inference engine: torch | onnx | openvino.
                              # Resolves <stem>.onnx / <stem>_openvino_model and
                              # falls back to the .pt if the artifact is absent
                              # (software/ai/detector.py resolve_model_path).
@@ -44,7 +44,7 @@ ai:
                              # (software/ai/detector.py _resolve_ov_device).
   vlm_enabled: false         # BLIP caption-on-demand (ai/explainer.py); first
                              # use downloads ~1 GB of BLIP weights
-  tracker: "tracktrack.yaml"  # multi-object tracker: tracktrack.yaml | botsort.yaml | bytetrack.yaml | fasttrack.yaml | ocsort.yaml
+  tracker: "botsort.yaml"  # multi-object tracker: tracktrack.yaml | botsort.yaml | bytetrack.yaml | fasttrack.yaml | ocsort.yaml
   sahi_enabled: false        # SAHI (Slicing Aided Hyper Inference) for small/far distant objects
   sahi_slice_size: 320       # tile dimensions for sliced multi-scale inference
   sahi_overlap: 0.20         # overlap ratio between adjacent tiles
@@ -281,8 +281,8 @@ perception:
   window_name: "AI Rover - Perception Node"
 
 dashboard:
-  enabled: false
-  host: "127.0.0.1"
+  enabled: true
+  host: "0.0.0.0"
   port: 5000
   mode: "manual"             # manual | auto | observe — MissionPilot start mode
   decision_history: 60       # why-chain ring buffer length for /api/decision

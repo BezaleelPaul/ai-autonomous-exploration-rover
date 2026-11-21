@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "AI ROVER & Antigravity Autonomous Engineering Platform",
+    "output": "architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "ui-deck", "type": "frontend", "label": "Mission Deck Web UI", "sublabel": "Flask / Jinja2 :5000", "pos": [50, 280], "size": [150, 60], "tag": "Live YOLO Stream" },
+    { "id": "flask-api", "type": "backend", "label": "Mission Control API", "sublabel": "scripts/dashboard.py", "pos": [260, 280], "size": [150, 60] },
+    { "id": "yolo-engine", "type": "backend", "label": "YOLOv11 Vision AI", "sublabel": "Real-time edge perception", "pos": [480, 160], "size": [160, 60], "tag": "0.015s latency" },
+    { "id": "mock-serial", "type": "backend", "label": "Robotics Bus", "sublabel": "Motor & Sensor telemetry", "pos": [480, 400], "size": [160, 60] },
+    { "id": "omniroute", "type": "cloud", "label": "OmniRoute Gateway", "sublabel": "Port :20128 (377 Models)", "pos": [720, 280], "size": [160, 60], "tag": "0 Cost Free Pool" },
+    { "id": "headroom", "type": "cloud", "label": "Headroom Proxy", "sublabel": "Port :8787 (Compression)", "pos": [720, 140], "size": [160, 60], "tag": "99.5% token save" },
+    { "id": "antigravity-mem", "type": "database", "label": "Antigravity Mem", "sublabel": "Port :37700 (SQLite FTS5)", "pos": [950, 280], "size": [160, 60] },
+    { "id": "hermes-kanban", "type": "backend", "label": "Hermes Multi-Agent", "sublabel": "Kanban.db (Velocity v0.15)", "pos": [950, 420], "size": [160, 60] },
+    { "id": "agent-reach", "type": "external", "label": "Agent Reach Engine", "sublabel": "Multi-Platform Scraper", "pos": [950, 140], "size": [160, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "AI Rover Core Robotics (Edge Runtime)", "wraps": ["ui-deck", "flask-api", "yolo-engine", "mock-serial"] },
+    { "kind": "region", "label": "Antigravity Autonomous Control & Efficiency Suite", "wraps": ["omniroute", "headroom", "antigravity-mem", "hermes-kanban", "agent-reach"] }
+  ],
+  "connections": [
+    { "id": "c-ui-flask", "from": "ui-deck", "to": "flask-api", "label": "REST / SSE", "variant": "emphasis" },
+    { "id": "c-flask-yolo", "from": "flask-api", "to": "yolo-engine", "label": "Video frames", "fromSide": "top", "toSide": "left" },
+    { "id": "c-flask-serial", "from": "flask-api", "to": "mock-serial", "label": "Motor telemetry", "fromSide": "bottom", "toSide": "left" },
+    { "id": "c-flask-omni", "from": "flask-api", "to": "omniroute", "label": "Autonomous plan" },
+    { "id": "c-headroom-omni", "from": "headroom", "to": "omniroute", "label": "Compressed pass-through", "fromSide": "bottom", "toSide": "top" },
+    { "id": "c-omni-mem", "from": "omniroute", "to": "antigravity-mem", "label": "0-cost observation extraction" },
+    { "id": "c-omni-hermes", "from": "omniroute", "to": "hermes-kanban", "label": "Swarm LLM inference", "fromSide": "bottom", "toSide": "left" },
+    { "id": "c-reach-mem", "from": "agent-reach", "to": "antigravity-mem", "label": "Structured web intelligence", "fromSide": "bottom", "toSide": "top" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Mission Control", "items": ["Live Mission Deck running on Port 5000", "YOLOv11 Tensor stream with bounding boxes and classes", "Dual-stick virtual drive controls + telemetry"] },
+    { "dot": "emerald", "title": "AI Gateway & Token Engine", "items": ["OmniRoute routes inference to 377 free provider models", "Headroom proxy provides 99.5% token compression", "MarkItDown strips raw doc bloat into clean Markdown"] },
+    { "dot": "amber", "title": "Memory & Multi-Agent Swarm", "items": ["Antigravity Mem persists notes across sessions on Port 37700", "Hermes Durable Kanban database handles task graphs", "Agent Reach scrapes live GitHub, YouTube, Reddit, and X"] }
+  ]
+}

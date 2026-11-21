@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-rover"
+version = "1.3.0"
+description = "AI-assisted autonomous exploration rover: laptop vision tier, rover client and dataset tooling"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Chakali Ram Vinay" },
+  { name = "Chinmay D M" },
+  { name = "Bezaleel Paul N" },
+]
+dependencies = [
+  "numpy>=1.26",
+  "opencv-python>=4.9",
+  "pyserial>=3.5",
+]
+
+[project.optional-dependencies]
+vision = ["ultralytics>=8.3.0", "openvino>=2024.0"]
+dev = ["pytest>=8.0"]
+
+[tool.setuptools]
+package-dir = { "" = "software" }
+
+[tool.setuptools.packages.find]
+where = ["software"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

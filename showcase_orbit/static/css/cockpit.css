@@ -1,0 +1,67 @@
+/* ==============================================================================
+   AeroPulse Orbital Deck — Cockpit Stylesheet
+   Aceternity 3D Cards, Glassmorphic Panels, Codrops HUD Reticle
+   ============================================================================== */
+
+:root {
+  --cyber-cyan: #00f2fe;
+  --neon-emerald: #10b981;
+  --amber-alert: #f59e0b;
+}
+
+body {
+  background-color: #07090e;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(13, 19, 31, 0.8) 0%, #07090e 100%),
+    linear-gradient(rgba(0, 242, 254, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 242, 254, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+
+/* 3D Tilt Card Perspective */
+.card-3d-wrap {
+  perspective: 1000px;
+}
+
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1);
+}
+
+/* Magnetic Button Hover State */
+.magnetic-btn {
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.2s ease, border-color 0.2s ease;
+  user-select: none;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #07090e;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00f2fe;
+}
+
+/* Radar Scanline Animation */
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.radar-sweep-beam {
+  transform-origin: center;
+  animation: radar-sweep 4s linear infinite;
+}

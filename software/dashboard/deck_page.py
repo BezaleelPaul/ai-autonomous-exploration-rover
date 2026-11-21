@@ -133,6 +133,7 @@ kbd.down{background:#3dff7e;color:#04140a;border-color:#3dff7e;transform:transla
 <span id="link" class="pill">LINK …</span>
 <span id="state" class="pill">STATE …</span>
 <span id="status" class="pill">STATUS …</span>
+<button id="qrbtn" class="pill" style="cursor:pointer;background:#08201a;border-color:#00f2fe;color:#00f2fe;font-weight:bold;">&#128241; PAIR PHONE (QR)</button>
 <span class="pill">pad always overrides</span></header>
 <main>
 <section class="video">
@@ -216,7 +217,21 @@ kbd.down{background:#3dff7e;color:#04140a;border-color:#3dff7e;transform:transla
   </div>
 </aside>
 </main>
+<div id="qrmodal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:#0f131a;border:2px solid #00f2fe;border-radius:8px;padding:22px;text-align:center;max-width:340px;box-shadow:0 0 25px rgba(0,242,254,0.3);">
+    <h3 style="margin-top:0;color:#00f2fe;font-size:16px;">PAIR PHONE COMPANION</h3>
+    <p style="font-size:12px;color:#94a3b8;line-height:1.4;">Scan this QR code with your phone camera to launch the RoverLink Mobile Companion (zero ads, camera stream & drive pad):</p>
+    <img src="/api/qr" alt="Pairing QR" style="width:200px;height:200px;border-radius:6px;border:1px solid #1e293b;background:#fff;padding:8px;margin:8px 0;">
+    <div style="font-size:11px;color:#64748b;margin-bottom:12px;">Or browse to: <code id="qrhint" style="color:#38bdf8;">/companion</code></div>
+    <button onclick="document.getElementById('qrmodal').style.display='none'" style="background:#1e293b;border:1px solid #334155;color:#f8fafc;padding:7px 20px;border-radius:4px;cursor:pointer;font-weight:bold;">CLOSE</button>
+  </div>
+</div>
 <script>
+document.getElementById("qrbtn").addEventListener("click",function(){
+  document.getElementById("qrmodal").style.display="flex";
+  document.getElementById("qrhint").textContent=location.origin+"/companion";
+});
+
 const KEYMAP={w:"F",a:"L",s:"B",d:"R","arrowup":"F","arrowdown":"B",
 "arrowleft":"L","arrowright":"R"," ":"S",escape:"S"};
 let held=new Set();
@@ -340,7 +355,7 @@ async function pollState(){
     const s=await(await fetch("/api/state")).json();
     const t=s.link||{};
     const link=document.getElementById("link");
-    link.textContent=t.connected?"USB "+(t.port||""):"LINK DOWN";
+    link.textContent=t.connected?(t.mock?"LINK OK (SIMULATED)":"USB "+(t.port||"ACTIVE")):"LINK DOWN";
     link.className="pill "+(t.connected?"ok":"bad");
     const st=document.getElementById("state");
     st.textContent="STATE "+(t.state||"—");

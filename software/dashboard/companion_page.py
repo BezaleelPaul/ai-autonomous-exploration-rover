@@ -77,6 +77,21 @@ COMPANION_PAGE = """<!doctype html>
       font-size: 12px; font-weight: 600; text-align: center; cursor: pointer;
     }
     .btn-action.active { background: #10b981; color: #000; border-color: #10b981; }
+
+    .failover-row {
+      display: flex; gap: 6px; align-items: center; justify-content: space-between;
+      margin-top: 4px; padding: 6px 10px; background: #080a0f; border-radius: 6px;
+      font-size: 11px; border: 1px solid #1e293b;
+    }
+    .failover-title { color: #f59e0b; font-weight: bold; font-size: 10px; letter-spacing: 0.5px; }
+    .failover-btn {
+      flex: 1; padding: 5px 6px; border-radius: 4px; background: #14181b;
+      border: 1px solid #334155; color: #94a3b8; font-size: 10px; text-align: center;
+      text-decoration: none; cursor: pointer; font-weight: 600;
+    }
+    .failover-btn.active {
+      background: #08201a; color: #10b981; border-color: #10b981;
+    }
   </style>
 </head>
 <body>
@@ -116,6 +131,14 @@ COMPANION_PAGE = """<!doctype html>
     </div>
     <div class="dpad-row">
       <button class="btn-drive" data-cmd="B">&#9660;</button>
+    </div>
+
+    <!-- Failover / Backup System Selector -->
+    <div class="failover-row">
+      <span class="failover-title">FAILOVER:</span>
+      <button id="plan-a-btn" class="failover-btn active" title="Plan A: In-Browser Camera">Plan A (WebCam)</button>
+      <button id="plan-b-btn" class="failover-btn" title="Plan B: Native IP Webcam App">Plan B (IP Webcam)</button>
+      <a href="http://192.168.4.1" target="_blank" class="failover-btn" title="Plan C: Direct ESP32 Soft-AP Web UI">Plan C (Soft-AP)</a>
     </div>
   </div>
 
@@ -233,11 +256,46 @@ COMPANION_PAGE = """<!doctype html>
       }
     });
 
+    let myClientIp = "";
+
+    // Failover Selector Handlers
+    document.getElementById("plan-a-btn").addEventListener("click", () => {
+      document.getElementById("plan-a-btn").classList.add("active");
+      document.getElementById("plan-b-btn").classList.remove("active");
+      alert("Plan A Active: Use 'START PHONE CAMERA' above to stream directly to YOLOv11.");
+    });
+
+    document.getElementById("plan-b-btn").addEventListener("click", async () => {
+      const ip = prompt("Confirm Phone IP for IP Webcam stream (default port 8080):", myClientIp || "192.168.1.50");
+      if (!ip) return;
+      const url = ip.startsWith("http") ? ip : `http://${ip}:8080/video`;
+      try {
+        const res = await fetch("/api/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: url })
+        });
+        const d = await res.json();
+        if (d.ok) {
+          alert("✓ Plan B Active! Laptop repointed to " + url);
+          document.getElementById("plan-b-btn").classList.add("active");
+          document.getElementById("plan-a-btn").classList.remove("active");
+        } else {
+          alert("Stream switch error: " + (d.error || "unknown"));
+        }
+      } catch (err) {
+        alert("Connection error: " + err.message);
+      }
+    });
+
     // Telemetry Poller
     async function pollState() {
       try {
         const res = await fetch("/api/state");
         const data = await res.json();
+        if (data.client_ip) {
+          myClientIp = data.client_ip;
+        }
         const connPill = document.getElementById("conn-pill");
         connPill.textContent = "ROVER LINK ACTIVE";
         connPill.className = "badge";

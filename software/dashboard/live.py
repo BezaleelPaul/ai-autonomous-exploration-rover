@@ -63,6 +63,7 @@ class LiveFeed:
         self._lock = threading.Lock()
         self._raw: np.ndarray | None = None
         self._pushed: np.ndarray | None = None
+        self._pushed_at: float = 0.0
         self._dets: list = []
         self._infer_ms = 0.0
         self._last_infer = 0.0
@@ -188,20 +189,26 @@ class LiveFeed:
         """Accept an incoming camera frame pushed over HTTP/WebSocket from a phone companion."""
         if frame is None or getattr(frame, "size", 0) == 0:
             return
+        now = time.time()
         with self._lock:
             self._pushed = frame
+            self._pushed_at = now
             self._raw = frame
             self._frames += 1
-            dt = time.time() - self._t0
+            dt = now - self._t0
             if dt >= 2.0:
                 self._fps = self._frames / dt
                 self._frames = 0
-                self._t0 = time.time()
+                self._t0 = now
 
     # ---- threads ----
     def _grab(self) -> np.ndarray | None:
         if getattr(self, "_pushed", None) is not None:
-            return self._pushed
+            # Plan A (Phone Push) is active. Watchdog check: must have arrived within last 3.5 seconds
+            if time.time() - getattr(self, "_pushed_at", 0.0) < 3.5:
+                return self._pushed
+            # Plan A stalled! Clear pushed frame and fail over to underlying stream or mock
+            self._pushed = None
         if self.source == "mock":
             f = np.zeros((480, 640, 3), dtype=np.uint8)
             f[:] = (25, 25, 30)

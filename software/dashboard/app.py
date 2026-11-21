@@ -196,6 +196,7 @@ def create_control_app(
             out["feed"] = feed.state() if feed is not None else {}
         except Exception as e:
             out["feed"] = {"error": str(e)}
+        out["client_ip"] = request.remote_addr
         return jsonify(out)
 
     def _param_from_request(name: str) -> str | None:

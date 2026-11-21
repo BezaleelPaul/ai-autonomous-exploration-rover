@@ -40,7 +40,7 @@ def _open_arduino(cfg: dict, port: str, mock: bool) -> ArduinoLink:
             "--arduino COMx / --mock-serial to run without hardware."
         )
         raise SystemExit(1)
-    baud = int(perception.get("baud_rate", 9600))
+    baud = int(perception.get("baud_rate", 115200)) if port else 115200
     link = ArduinoLink(board or "", baud, mock=mock)
     if not link.connect():
         print(f"Could not open {board}. Close the Arduino Serial Monitor first.")

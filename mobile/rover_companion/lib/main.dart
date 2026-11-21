@@ -39,8 +39,11 @@ class RoverMainScreen extends StatefulWidget {
 
 class _RoverMainScreenState extends State<RoverMainScreen> {
   int _currentIndex = 0;
-  String _serverUrl = "http://192.168.1.11:5000";
+  String _serverUrl = "http://192.168.4.2:5000";
+  late final TextEditingController _urlController;
   bool _isConnected = false;
+  bool _isDirectEsp32 = false;
+  bool _isScanning = false;
   double? _distanceCm;
   String _roverState = "STOP";
   String _pilotMode = "MANUAL";
@@ -59,6 +62,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   @override
   void initState() {
     super.initState();
+    _urlController = TextEditingController(text: _serverUrl);
     _startPolling();
     _startFrameTimer();
   }
@@ -67,21 +71,24 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   void dispose() {
     _pollTimer?.cancel();
     _frameTimer?.cancel();
+    _urlController.dispose();
     super.dispose();
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 750), (timer) {
       _fetchState();
-      _fetchDecision();
+      if (!_isDirectEsp32) {
+        _fetchDecision();
+      }
     });
   }
 
   void _startFrameTimer() {
     _frameTimer?.cancel();
     _frameTimer = Timer.periodic(const Duration(milliseconds: 140), (timer) {
-      if (mounted && _liveStreamActive && _isConnected) {
+      if (mounted && _liveStreamActive && _isConnected && !_isDirectEsp32) {
         setState(() {
           _frameCounter = (_frameCounter + 1) % 100000;
         });
@@ -91,47 +98,77 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
 
   Future<void> _fetchState() async {
     try {
-      final uri = Uri.parse("$_serverUrl/api/state");
-      final res = await http.get(uri).timeout(const Duration(seconds: 2));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (mounted) {
-          setState(() {
-            _isConnected = true;
-            final link = data['link'];
-            if (link != null) {
-              _roverState = link['state'] ?? 'STOP';
-              if (link['distance_cm'] != null) {
-                _distanceCm = (link['distance_cm'] as num).toDouble();
-                if (_distanceCm! < 20.0 && _distanceCm! > 0) {
-                  HapticFeedback.heavyImpact();
+      final isEspDirect = _serverUrl.contains("192.168.4.1") && !_serverUrl.contains(":5000");
+      if (mounted) setState(() => _isDirectEsp32 = isEspDirect);
+
+      if (isEspDirect) {
+        // Direct ESP32 Gateway (/status)
+        final uri = Uri.parse("$_serverUrl/status");
+        final res = await http.get(uri).timeout(const Duration(seconds: 1));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (mounted) {
+            setState(() {
+              _isConnected = true;
+              final uno = data['uno'];
+              if (uno != null) {
+                _roverState = uno['state'] ?? 'STOP';
+                if (uno['dist_cm'] != null) {
+                  _distanceCm = (uno['dist_cm'] as num).toDouble();
                 }
               }
-            }
-            if (data['feed'] != null) {
-              final feed = data['feed'];
-              _modelName = (feed['model'] ?? feed['backend'] ?? 'YOLOv8s').toString();
-              _inferMs = (feed['infer_ms'] as num?)?.toInt() ?? 0;
-              _cameraFps = (feed['camera_fps'] as num?)?.toDouble() ?? 0.0;
-              if (feed['detections'] != null) {
-                final rawDets = feed['detections'] as List;
-                _detectedObjects = rawDets.take(5).map((d) {
-                  if (d is Map) {
-                    final label = (d['label'] ?? 'TARGET').toString().toUpperCase();
-                    final score = d['score'] != null ? ' ${((d['score'] as num) * 100).toInt()}%' : '';
-                    return '$label$score';
-                  }
-                  return d.toString().toUpperCase();
-                }).toList();
-              }
-            }
-            if (data['pilot'] != null && data['pilot']['mode'] != null) {
-              _pilotMode = data['pilot']['mode'].toString().toUpperCase();
-            }
-          });
+              _modelName = "ESP32 DIRECT";
+              _decisionOverlay = _roverState;
+              _decisionReason = "CONNECTED DIRECTLY TO MICROCONTROLLER";
+            });
+          }
+        } else {
+          if (mounted) setState(() => _isConnected = false);
         }
       } else {
-        if (mounted) setState(() => _isConnected = false);
+        // Python Mission Control Deck (/api/state)
+        final uri = Uri.parse("$_serverUrl/api/state");
+        final res = await http.get(uri).timeout(const Duration(seconds: 2));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (mounted) {
+            setState(() {
+              _isConnected = true;
+              final link = data['link'];
+              if (link != null) {
+                _roverState = link['state'] ?? 'STOP';
+                if (link['distance_cm'] != null) {
+                  _distanceCm = (link['distance_cm'] as num).toDouble();
+                  if (_distanceCm! < 20.0 && _distanceCm! > 0) {
+                    HapticFeedback.heavyImpact();
+                  }
+                }
+              }
+              if (data['feed'] != null) {
+                final feed = data['feed'];
+                _modelName = (feed['model'] ?? feed['backend'] ?? 'YOLOv8s').toString();
+                _inferMs = (feed['infer_ms'] as num?)?.toInt() ?? 0;
+                _cameraFps = (feed['camera_fps'] as num?)?.toDouble() ?? 0.0;
+                if (feed['detections'] != null) {
+                  final rawDets = feed['detections'] as List;
+                  _detectedObjects = rawDets.take(5).map((d) {
+                    if (d is Map) {
+                      final label = (d['label'] ?? 'TARGET').toString().toUpperCase();
+                      final score = d['score'] != null ? ' ${((d['score'] as num) * 100).toInt()}%' : '';
+                      return '$label$score';
+                    }
+                    return d.toString().toUpperCase();
+                  }).toList();
+                }
+              }
+              if (data['pilot'] != null && data['pilot']['mode'] != null) {
+                _pilotMode = data['pilot']['mode'].toString().toUpperCase();
+              }
+            });
+          }
+        } else {
+          if (mounted) setState(() => _isConnected = false);
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _isConnected = false);
@@ -162,16 +199,25 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   Future<void> _sendCommand(String cmd) async {
     HapticFeedback.lightImpact();
     try {
-      final uri = Uri.parse("$_serverUrl/api/cmd");
-      await http.post(
-        uri,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"c": cmd, "speed": _targetSpeed}),
-      ).timeout(const Duration(seconds: 1));
+      if (_isDirectEsp32) {
+        // Direct ESP32 endpoint: /cmd?c=F180
+        final speedVal = cmd == "S" ? "" : "$_targetSpeed";
+        final uri = Uri.parse("$_serverUrl/cmd?c=$cmd$speedVal");
+        await http.get(uri).timeout(const Duration(milliseconds: 600));
+      } else {
+        // Python Mission Deck: /api/cmd JSON POST
+        final uri = Uri.parse("$_serverUrl/api/cmd");
+        await http.post(
+          uri,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({"c": cmd, "speed": _targetSpeed}),
+        ).timeout(const Duration(milliseconds: 600));
+      }
     } catch (_) {}
   }
 
   Future<void> _toggleMode() async {
+    if (_isDirectEsp32) return;
     HapticFeedback.mediumImpact();
     final target = (_pilotMode == "MANUAL") ? "auto" : "manual";
     try {
@@ -188,6 +234,47 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
         }
       }
     } catch (_) {}
+  }
+
+  Future<void> _autoDetectServer() async {
+    setState(() => _isScanning = true);
+    final candidates = [
+      "http://192.168.4.2:5000",   // Laptop when connected to ESP32 Rover Wi-Fi
+      "http://192.168.1.11:5000",  // Laptop on Home Wi-Fi LAN
+      "http://192.168.4.1",        // Direct ESP32 Soft-AP
+      "http://localhost:5000",
+    ];
+
+    for (final candidate in candidates) {
+      try {
+        final checkUrl = candidate.contains(":5000") ? "$candidate/api/state" : "$candidate/status";
+        final res = await http.get(Uri.parse(checkUrl)).timeout(const Duration(milliseconds: 900));
+        if (res.statusCode == 200) {
+          if (mounted) {
+            setState(() {
+              _serverUrl = candidate;
+              _urlController.text = candidate;
+              _isScanning = false;
+            });
+            _fetchState();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('✓ Connected to $candidate!'), backgroundColor: const Color(0xFF10B981)),
+            );
+          }
+          return;
+        }
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      setState(() => _isScanning = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Auto-detect: No server responded. Check your phone Wi-Fi connection.'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+    }
   }
 
   @override
@@ -215,7 +302,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                _isConnected ? 'AI ONLINE' : 'OFFLINE',
+                _isConnected ? (_isDirectEsp32 ? 'ESP32 LINK' : 'AI ONLINE') : 'OFFLINE',
                 style: TextStyle(
                   color: _isConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                   fontSize: 11,
@@ -275,7 +362,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _isConnected
+                _isConnected && !_isDirectEsp32
                     ? Image.network(
                         "$_serverUrl/snapshot.jpg?t=$_frameCounter",
                         gaplessPlayback: true,
@@ -304,7 +391,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
                             const Icon(Icons.remove_red_eye, size: 12, color: Color(0xFF00F2FE)),
                             const SizedBox(width: 4),
                             Text(
-                              '$_modelName • ${_inferMs}ms • ${_cameraFps.toStringAsFixed(1)} FPS',
+                              _isDirectEsp32 ? 'DIRECT HARDWARE MODE' : '$_modelName • ${_inferMs}ms • ${_cameraFps.toStringAsFixed(1)} FPS',
                               style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
                             ),
                           ],
@@ -542,15 +629,24 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.radar, size: 36, color: Color(0xFF00F2FE)),
+          Icon(
+            _isDirectEsp32 ? Icons.memory : Icons.radar,
+            size: 36,
+            color: const Color(0xFF00F2FE),
+          ),
           const SizedBox(height: 8),
           Text(
-            _isConnected ? 'Awaiting Video Frame from AI Server...' : 'AI Mission Deck Offline',
+            _isDirectEsp32
+                ? 'Plan C: Direct ESP32 Gateway (No Video on Microcontroller)'
+                : (_isConnected ? 'Connecting to AI Video Stream...' : 'AI Mission Deck Offline'),
+            textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 4),
           Text(
-            'Target: $_serverUrl',
+            _isDirectEsp32
+                ? 'Connect to Laptop (:5000) for YOLO AI Vision & Camera'
+                : 'Target: $_serverUrl',
             style: const TextStyle(fontSize: 10, color: Color(0xFF00F2FE)),
           ),
         ],
@@ -559,7 +655,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   }
 
   void _openPhoneCameraHUD() {
-    final companionUrl = "$_serverUrl/companion";
+    final companionUrl = _isDirectEsp32 ? "http://192.168.4.2:5000/companion" : "$_serverUrl/companion";
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -574,7 +670,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 12),
-            const Text('Open in your browser:', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+            const Text('Open in your phone browser:', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             SelectableText(
               companionUrl,
@@ -594,7 +690,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               Clipboard.setData(ClipboardData(text: companionUrl));
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied AR HUD URL to clipboard! Open in Chrome or Safari.')),
+                const SnackBar(content: Text('Copied AR HUD URL! Open in Chrome or Safari.')),
               );
             },
           ),
@@ -648,7 +744,6 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   }
 
   Widget _buildPairingTab() {
-    final controller = TextEditingController(text: _serverUrl);
     return Padding(
       padding: const EdgeInsets.all(20),
       child: ListView(
@@ -661,7 +756,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
           ),
           const SizedBox(height: 16),
           TextField(
-            controller: controller,
+            controller: _urlController,
             decoration: const InputDecoration(
               labelText: 'Mission Control URL',
               border: OutlineInputBorder(),
@@ -669,44 +764,60 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00F2FE), foregroundColor: Colors.black),
-              icon: const Icon(Icons.link),
-              label: const Text('CONNECT & SAVE URL', style: TextStyle(fontWeight: FontWeight.bold)),
-              onPressed: () {
-                setState(() => _serverUrl = controller.text.trim());
-                _fetchState();
-              },
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text('QUICK IP PRESETS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
-                child: OutlinedButton(
-                  child: const Text('Home LAN (:5000)', style: TextStyle(fontSize: 11)),
-                  onPressed: () {
-                    setState(() => _serverUrl = "http://192.168.1.11:5000");
-                    controller.text = _serverUrl;
-                    _fetchState();
-                  },
+                child: SizedBox(
+                  height: 46,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00F2FE), foregroundColor: Colors.black),
+                    icon: const Icon(Icons.link),
+                    label: const Text('SAVE & CONNECT', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      setState(() => _serverUrl = _urlController.text.trim());
+                      _fetchState();
+                    },
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  child: const Text('Soft-AP (:5000)', style: TextStyle(fontSize: 11)),
-                  onPressed: () {
-                    setState(() => _serverUrl = "http://192.168.4.2:5000");
-                    controller.text = _serverUrl;
-                    _fetchState();
-                  },
+              SizedBox(
+                height: 46,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF10B981))),
+                  icon: _isScanning
+                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)))
+                      : const Icon(Icons.search, color: Color(0xFF10B981)),
+                  label: const Text('AUTO-DETECT', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                  onPressed: _isScanning ? null : _autoDetectServer,
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          const Text('NETWORK PRESETS (TAP TO CONNECT)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 8),
+          Column(
+            children: [
+              _buildPresetCard(
+                title: 'Rover Wi-Fi (ESP32 AP)',
+                url: 'http://192.168.4.2:5000',
+                desc: 'Use when laptop & phone are connected to AI_Rover_Control Wi-Fi.',
+                icon: Icons.wifi,
+              ),
+              const SizedBox(height: 8),
+              _buildPresetCard(
+                title: 'Home Wi-Fi LAN',
+                url: 'http://192.168.1.11:5000',
+                desc: 'Use when laptop & phone are connected to your home router.',
+                icon: Icons.router,
+              ),
+              const SizedBox(height: 8),
+              _buildPresetCard(
+                title: 'Direct ESP32 Gateway (Plan C)',
+                url: 'http://192.168.4.1',
+                desc: 'Direct hardware control without laptop running.',
+                icon: Icons.memory,
               ),
             ],
           ),
@@ -721,13 +832,53 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('HOW PAIRING WORKS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('NETWORK TROUBLESHOOTING', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                 SizedBox(height: 8),
-                Text('• Plan A (Web Companion): Open http://<laptop-ip>:5000/companion in Chrome/Safari to use phone camera & AR HUD.\n• Plan B (Flutter Companion): Use this app to control rover and view AI video stream.\n• Plan C (Soft-AP Backup): Connect to Wi-Fi "AI_Rover_Control" (pass: rover1234) at http://192.168.4.1.', style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.4)),
+                Text('• When on "AI_Rover_Control" Wi-Fi: Laptop IP is 192.168.4.2 (port :5000). ESP32 is 192.168.4.1.\n• When on Home Wi-Fi: Laptop IP is 192.168.1.11 (port :5000).\n• If the app cannot connect, tap "AUTO-DETECT" above to automatically find the running server.', style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.4)),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPresetCard({required String title, required String url, required String desc, required IconData icon}) {
+    final isSelected = (_serverUrl == url);
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _serverUrl = url;
+          _urlController.text = url;
+        });
+        _fetchState();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0D2818) : const Color(0xFF0F131A),
+          border: Border.all(color: isSelected ? const Color(0xFF10B981) : const Color(0xFF1E293B)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isSelected ? const Color(0xFF10B981) : const Color(0xFF00F2FE), size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+                  Text(url, style: const TextStyle(fontSize: 11, color: Color(0xFF00F2FE), fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(desc, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18),
+          ],
+        ),
       ),
     );
   }

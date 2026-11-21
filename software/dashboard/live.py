@@ -125,7 +125,17 @@ class LiveFeed:
         else:
             import cv2
 
-            self._cap = cv2.VideoCapture(self.cam_index)
+            cap = cv2.VideoCapture(self.cam_index)
+            if not cap.isOpened():
+                for alt_idx in (2, 0, 1, 3, 4):
+                    if alt_idx == self.cam_index:
+                        continue
+                    alt_cap = cv2.VideoCapture(alt_idx)
+                    if alt_cap.isOpened():
+                        cap = alt_cap
+                        self.cam_index = alt_idx
+                        break
+            self._cap = cap
         self._running = True
         threading.Thread(target=self._capture_loop, daemon=True).start()
         threading.Thread(target=self._infer_loop, daemon=True).start()

@@ -95,6 +95,30 @@ const char INDEX_HTML[] PROGMEM = R"HTML(<!DOCTYPE html>
 </header>
 
 <main>
+  <div style="background:linear-gradient(135deg,#0c2333 0%,#091824 100%);border:1px solid var(--accent);border-radius:14px;padding:12px 14px;box-shadow:0 4px 14px rgba(34,211,238,0.12)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.12em">AI MODEL &amp; VISION DECK</span>
+      <span id="aiBadge" style="font-size:9px;padding:2px 6px;border-radius:4px;background:#10b98122;color:var(--ok);border:1px solid var(--ok);font-weight:700">ONLINE</span>
+    </div>
+    <div style="font-size:10px;color:var(--dim);margin-bottom:10px;line-height:1.4">
+      Live YOLOv8 bounding boxes, object detections, and autonomous decision reasoning chain:
+    </div>
+    <div style="display:flex;gap:8px">
+      <a id="openDeckBtn" href="http://192.168.4.2:5000/companion" target="_blank" rel="noopener" style="flex:1;text-align:center;background:var(--accent);color:#070b12;padding:9px;border-radius:10px;font-weight:700;font-size:11px;text-decoration:none;letter-spacing:.08em">
+        LAUNCH AI MISSION DECK
+      </a>
+      <button id="toggleStreamBtn" type="button" style="background:#16222f;border:1px solid var(--line);color:var(--ink);padding:9px 12px;border-radius:10px;font-weight:700;font-size:11px;cursor:pointer">
+        VIEW STREAM
+      </button>
+    </div>
+    <div id="aiFeedContainer" style="display:none;margin-top:10px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#000">
+      <img id="aiFeedImg" style="width:100%;display:block" alt="AI Video Stream">
+      <div id="aiDecisionText" style="padding:6px 10px;background:#080d14;font-size:10px;color:var(--accent);border-top:1px solid var(--line)">
+        DECISION: STANDBY
+      </div>
+    </div>
+  </div>
+
   <div class="hud">
     <div class="chip"><b id="hUp">--</b><span>uptime</span></div>
     <div class="chip"><b id="hFwd">--</b><span>packets</span></div>
@@ -298,6 +322,32 @@ const char INDEX_HTML[] PROGMEM = R"HTML(<!DOCTYPE html>
   }
   setInterval(poll, 1000);
   poll();
+
+  // --- AI Vision stream toggle
+  var toggleStreamBtn = document.getElementById("toggleStreamBtn");
+  var aiFeedContainer = document.getElementById("aiFeedContainer");
+  var aiFeedImg = document.getElementById("aiFeedImg");
+  var hostIp = "192.168.4.2:5000";
+
+  if (toggleStreamBtn && aiFeedContainer) {
+    toggleStreamBtn.addEventListener("click", function () {
+      if (aiFeedContainer.style.display === "none") {
+        aiFeedContainer.style.display = "block";
+        aiFeedImg.src = "http://" + hostIp + "/snapshot.jpg?t=" + Date.now();
+        toggleStreamBtn.textContent = "HIDE STREAM";
+      } else {
+        aiFeedContainer.style.display = "none";
+        aiFeedImg.src = "";
+        toggleStreamBtn.textContent = "VIEW STREAM";
+      }
+    });
+  }
+
+  setInterval(function () {
+    if (aiFeedContainer && aiFeedContainer.style.display !== "none") {
+      aiFeedImg.src = "http://" + hostIp + "/snapshot.jpg?t=" + Date.now();
+    }
+  }, 400);
 })();
 </script>
 </body>

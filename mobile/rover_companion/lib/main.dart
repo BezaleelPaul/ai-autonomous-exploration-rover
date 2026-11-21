@@ -46,24 +46,46 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   String _pilotMode = "MANUAL";
   int _targetSpeed = 185;
   List<String> _detectedObjects = [];
+  String _modelName = "YOLOv8s";
+  int _inferMs = 0;
+  double _cameraFps = 0.0;
+  String _decisionReason = "STANDBY • WAITING FOR PILOT";
+  String _decisionOverlay = "STOP";
+  int _frameCounter = 0;
+  bool _liveStreamActive = true;
   Timer? _pollTimer;
+  Timer? _frameTimer;
 
   @override
   void initState() {
     super.initState();
     _startPolling();
+    _startFrameTimer();
   }
 
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _frameTimer?.cancel();
     super.dispose();
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
       _fetchState();
+      _fetchDecision();
+    });
+  }
+
+  void _startFrameTimer() {
+    _frameTimer?.cancel();
+    _frameTimer = Timer.periodic(const Duration(milliseconds: 140), (timer) {
+      if (mounted && _liveStreamActive && _isConnected) {
+        setState(() {
+          _frameCounter = (_frameCounter + 1) % 100000;
+        });
+      }
     });
   }
 
@@ -81,21 +103,27 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               _roverState = link['state'] ?? 'STOP';
               if (link['distance_cm'] != null) {
                 _distanceCm = (link['distance_cm'] as num).toDouble();
-                if (_distanceCm! < 25.0) {
+                if (_distanceCm! < 20.0 && _distanceCm! > 0) {
                   HapticFeedback.heavyImpact();
                 }
               }
             }
-            if (data['feed'] != null && data['feed']['detections'] != null) {
-              final rawDets = data['feed']['detections'] as List;
-              _detectedObjects = rawDets.take(5).map((d) {
-                if (d is Map) {
-                  final label = (d['label'] ?? 'TARGET').toString().toUpperCase();
-                  final score = d['score'] != null ? ' ${((d['score'] as num) * 100).toInt()}%' : '';
-                  return '$label$score';
-                }
-                return d.toString().toUpperCase();
-              }).toList();
+            if (data['feed'] != null) {
+              final feed = data['feed'];
+              _modelName = (feed['model'] ?? feed['backend'] ?? 'YOLOv8s').toString();
+              _inferMs = (feed['infer_ms'] as num?)?.toInt() ?? 0;
+              _cameraFps = (feed['camera_fps'] as num?)?.toDouble() ?? 0.0;
+              if (feed['detections'] != null) {
+                final rawDets = feed['detections'] as List;
+                _detectedObjects = rawDets.take(5).map((d) {
+                  if (d is Map) {
+                    final label = (d['label'] ?? 'TARGET').toString().toUpperCase();
+                    final score = d['score'] != null ? ' ${((d['score'] as num) * 100).toInt()}%' : '';
+                    return '$label$score';
+                  }
+                  return d.toString().toUpperCase();
+                }).toList();
+              }
             }
             if (data['pilot'] != null && data['pilot']['mode'] != null) {
               _pilotMode = data['pilot']['mode'].toString().toUpperCase();
@@ -108,6 +136,27 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
     } catch (_) {
       if (mounted) setState(() => _isConnected = false);
     }
+  }
+
+  Future<void> _fetchDecision() async {
+    try {
+      final uri = Uri.parse("$_serverUrl/api/decision");
+      final res = await http.get(uri).timeout(const Duration(seconds: 1));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (mounted && data['decision'] != null) {
+          final dec = data['decision'];
+          setState(() {
+            _decisionOverlay = dec['overlay'] ?? dec['command'] ?? 'STOP';
+            final steer = dec['steering_reason'];
+            final safety = dec['safety_reason'];
+            _decisionReason = safety != null && safety.toString().isNotEmpty
+                ? safety.toString()
+                : (steer != null ? steer.toString() : 'CRUISING');
+          });
+        }
+      }
+    } catch (_) {}
   }
 
   Future<void> _sendCommand(String cmd) async {
@@ -166,7 +215,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                _isConnected ? 'LINK OK' : 'OFFLINE',
+                _isConnected ? 'AI ONLINE' : 'OFFLINE',
                 style: TextStyle(
                   color: _isConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                   fontSize: 11,
@@ -203,166 +252,354 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   Widget _buildDrivePadTab() {
     Color distColor = const Color(0xFF10B981);
     if (_distanceCm != null) {
-      if (_distanceCm! < 18.0) {
+      if (_distanceCm! < 18.0 && _distanceCm! > 0) {
         distColor = const Color(0xFFEF4444);
-      } else if (_distanceCm! < 30.0) {
+      } else if (_distanceCm! < 30.0 && _distanceCm! > 0) {
         distColor = const Color(0xFFF59E0B);
       }
     }
 
-    return Column(
-      children: [
-        // Telemetry HUD bar
-        Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0F131A),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1E293B)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              Column(
-                children: [
-                  const Text('OBSTACLE', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                  const SizedBox(height: 4),
-                  Text(
-                    _distanceCm != null ? '${_distanceCm!.toStringAsFixed(1)} cm' : '— cm',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: distColor),
-                  ),
-                ],
-              ),
-              GestureDetector(
-                onTap: _toggleMode,
-                child: Column(
-                  children: [
-                    const Text('AUTONOMY', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _pilotMode == 'AUTO' ? const Color(0xFF08201A) : const Color(0xFF1E293B),
-                        border: Border.all(color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE)),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        _pilotMode,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // 1. Live AI Camera Stream Viewport (FPV HUD)
+          Container(
+            margin: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+            height: 210,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF1E293B)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                _isConnected
+                    ? Image.network(
+                        "$_serverUrl/snapshot.jpg?t=$_frameCounter",
+                        gaplessPlayback: true,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _buildNoFeedPlaceholder(),
+                      )
+                    : _buildNoFeedPlaceholder(),
+
+                // Top HUD: Model & Inference Info
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  right: 8,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.75),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFF00F2FE)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.remove_red_eye, size: 12, color: Color(0xFF00F2FE)),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$_modelName • ${_inferMs}ms • ${_cameraFps.toStringAsFixed(1)} FPS',
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                children: [
-                  const Text('GATE STATUS', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                  const SizedBox(height: 4),
-                  Text(
-                    (_distanceCm != null && _distanceCm! < 20.0) ? 'BLOCKED' : 'CLEAR',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: (_distanceCm != null && _distanceCm! < 20.0) ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                    ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.75),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFF10B981)),
+                        ),
+                        child: Text(
+                          'DECISION: $_decisionOverlay',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        // Live AI Detection Chips HUD
-        if (_detectedObjects.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            child: Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: _detectedObjects.map((det) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF121D24),
-                  border: Border.all(color: const Color(0xFF00F2FE)),
-                  borderRadius: BorderRadius.circular(4),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.radar, size: 12, color: Color(0xFF00F2FE)),
-                    const SizedBox(width: 4),
-                    Text(det, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                  ],
-                ),
-              )).toList(),
-            ),
-          ),
 
-        // Speed Preset Buttons
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('SPEED: ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 6),
-              _buildSpeedChip('ECO', 130),
-              const SizedBox(width: 6),
-              _buildSpeedChip('NORMAL', 185),
-              const SizedBox(width: 6),
-              _buildSpeedChip('TURBO', 255),
-            ],
-          ),
-        ),
-
-        const Spacer(),
-
-        // Directional Pad
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildDriveButton('▲', 'F'),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildDriveButton('◀', 'L'),
-                const SizedBox(width: 14),
-                // Emergency Stop
-                GestureDetector(
-                  onTap: () {
-                    HapticFeedback.heavyImpact();
-                    _sendCommand('S');
-                  },
+                // Bottom HUD: Autonomous Reason
+                Positioned(
+                  bottom: 8,
+                  left: 8,
+                  right: 8,
                   child: Container(
-                    width: 82,
-                    height: 70,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x66EF4444), blurRadius: 14, offset: Offset(0, 4)),
-                      ],
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFF334155)),
                     ),
-                    alignment: Alignment.center,
-                    child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    child: Text(
+                      'WHY: $_decisionReason',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 10, color: Color(0xFFE2E8F0), fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 14),
-                _buildDriveButton('▶', 'R'),
               ],
             ),
+          ),
+
+          // 2. Phone Camera Streamer Quick Action Bar
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF00F2FE)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    icon: const Icon(Icons.camera_alt, size: 16, color: Color(0xFF00F2FE)),
+                    label: const Text(
+                      'OPEN PHONE CAM AR HUD',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00F2FE)),
+                    ),
+                    onPressed: () => _openPhoneCameraHUD(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Toggle Video Feed',
+                  icon: Icon(_liveStreamActive ? Icons.videocam : Icons.videocam_off, color: const Color(0xFF10B981)),
+                  onPressed: () => setState(() => _liveStreamActive = !_liveStreamActive),
+                ),
+              ],
+            ),
+          ),
+
+          // 3. Telemetry HUD bar
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F131A),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF1E293B)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Column(
+                  children: [
+                    const Text('OBSTACLE', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    const SizedBox(height: 2),
+                    Text(
+                      _distanceCm != null && _distanceCm! > 0 ? '${_distanceCm!.toStringAsFixed(1)} cm' : '— cm',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: distColor),
+                    ),
+                  ],
+                ),
+                GestureDetector(
+                  onTap: _toggleMode,
+                  child: Column(
+                    children: [
+                      const Text('AUTONOMY', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: _pilotMode == 'AUTO' ? const Color(0xFF08201A) : const Color(0xFF1E293B),
+                          border: Border.all(color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE)),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          _pilotMode,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  children: [
+                    const Text('GATE STATUS', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    const SizedBox(height: 2),
+                    Text(
+                      (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? 'BLOCKED' : 'CLEAR',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // 4. Live AI Detection Chips
+          if (_detectedObjects.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: _detectedObjects.map((det) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF121D24),
+                    border: Border.all(color: const Color(0xFF00F2FE)),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.radar, size: 12, color: Color(0xFF00F2FE)),
+                      const SizedBox(width: 4),
+                      Text(det, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ],
+                  ),
+                )).toList(),
+              ),
+            ),
+
+          // 5. Speed Selector
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('SPEED: ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+                const SizedBox(width: 6),
+                _buildSpeedChip('ECO', 130),
+                const SizedBox(width: 6),
+                _buildSpeedChip('NORMAL', 185),
+                const SizedBox(width: 6),
+                _buildSpeedChip('TURBO', 255),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 8),
+
+          // 6. Directional Drive Pad
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDriveButton('▲', 'F'),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildDriveButton('◀', 'L'),
+                  const SizedBox(width: 14),
+                  // Emergency Stop
+                  GestureDetector(
+                    onTap: () {
+                      HapticFeedback.heavyImpact();
+                      _sendCommand('S');
+                    },
+                    child: Container(
+                      width: 82,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x66EF4444), blurRadius: 14, offset: Offset(0, 4)),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  _buildDriveButton('▶', 'R'),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildDriveButton('▼', 'B'),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoFeedPlaceholder() {
+    return Container(
+      color: const Color(0xFF0F131A),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.radar, size: 36, color: Color(0xFF00F2FE)),
+          const SizedBox(height: 8),
+          Text(
+            _isConnected ? 'Awaiting Video Frame from AI Server...' : 'AI Mission Deck Offline',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Target: $_serverUrl',
+            style: const TextStyle(fontSize: 10, color: Color(0xFF00F2FE)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openPhoneCameraHUD() {
+    final companionUrl = "$_serverUrl/companion";
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F131A),
+        title: const Text('PHONE CAMERA AR STREAMER', style: TextStyle(color: Color(0xFF00F2FE), fontSize: 14)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your smartphone camera can act as the real-time eye of the AI Rover, streaming straight into YOLO model inference with bounding boxes and AR HUD.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
             const SizedBox(height: 12),
-            _buildDriveButton('▼', 'B'),
+            const Text('Open in your browser:', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            SelectableText(
+              companionUrl,
+              style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
+            ),
           ],
         ),
-        const Spacer(),
-      ],
+        actions: [
+          TextButton(
+            child: const Text('DISMISS'),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00F2FE), foregroundColor: Colors.black),
+            child: const Text('COPY LINK', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: companionUrl));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copied AR HUD URL to clipboard! Open in Chrome or Safari.')),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -398,7 +635,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
       onPointerUp: (_) => _sendCommand('S'),
       child: Container(
         width: 76,
-        height: 64,
+        height: 60,
         decoration: BoxDecoration(
           color: const Color(0xFF1E293B),
           border: Border.all(color: const Color(0xFF334155)),
@@ -419,33 +656,61 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
           const Text('MISSION CONTROL PAIRING', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF00F2FE))),
           const SizedBox(height: 8),
           const Text(
-            'Connect your phone to the desktop Mission Deck. Once paired, your phone camera streams straight into YOLOv11 with zero ads.',
+            'Connect your phone to the desktop Mission Deck to stream video into YOLO AI and receive real-time object bounding boxes and autonomous decisions.',
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           TextField(
             controller: controller,
             decoration: const InputDecoration(
-              labelText: 'Desktop Mission Control URL',
+              labelText: 'Mission Control URL',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.computer),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            height: 48,
+            height: 46,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00F2FE), foregroundColor: Colors.black),
               icon: const Icon(Icons.link),
-              label: const Text('TEST & SAVE CONNECTION', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text('CONNECT & SAVE URL', style: TextStyle(fontWeight: FontWeight.bold)),
               onPressed: () {
                 setState(() => _serverUrl = controller.text.trim());
                 _fetchState();
               },
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          const Text('QUICK IP PRESETS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  child: const Text('Home LAN (:5000)', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    setState(() => _serverUrl = "http://192.168.1.11:5000");
+                    controller.text = _serverUrl;
+                    _fetchState();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  child: const Text('Soft-AP (:5000)', style: TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    setState(() => _serverUrl = "http://192.168.4.2:5000");
+                    controller.text = _serverUrl;
+                    _fetchState();
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -456,9 +721,9 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('QUICK PAIRING METHODS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('HOW PAIRING WORKS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                 SizedBox(height: 8),
-                Text('• Plan A (Web Companion): Scan the QR code on the desktop deck to open /companion with AR HUD & WebCam streaming.\n• Plan B (IP Webcam): Start IP Webcam app on phone, open /companion and tap "Plan B" to auto-link the stream.\n• Plan C (Soft-AP): Connect to Wi-Fi "AI_Rover_Control" at 192.168.4.1.', style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.4)),
+                Text('• Plan A (Web Companion): Open http://<laptop-ip>:5000/companion in Chrome/Safari to use phone camera & AR HUD.\n• Plan B (Flutter Companion): Use this app to control rover and view AI video stream.\n• Plan C (Soft-AP Backup): Connect to Wi-Fi "AI_Rover_Control" (pass: rover1234) at http://192.168.4.1.', style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.4)),
               ],
             ),
           ),
@@ -477,14 +742,17 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
         const SizedBox(height: 16),
         _buildWiringRow('ESP32 GPIO 17 (TX2)', 'Arduino UNO D4', 'SoftwareSerial RX 9600 baud'),
         _buildWiringRow('ESP32 GND', 'Arduino UNO GND', 'Mandatory Common Star Ground'),
-        _buildWiringRow('HC-SR04 TRIG', 'Arduino UNO D11', '10 µs Ultrasonic Pulse'),
-        _buildWiringRow('HC-SR04 ECHO', 'Arduino UNO D12', 'Echo Return Pulse Width'),
-        _buildWiringRow('Motor Left (PWM)', 'Arduino UNO D5', 'ENA / PWMA Speed Gate'),
-        _buildWiringRow('Motor Left (DIR)', 'Arduino UNO D6 / D7', 'AIN1 / AIN2 Direction Gates'),
-        _buildWiringRow('Motor Right (PWM)', 'Arduino UNO D9 / D10', 'ENB / PWMB Speed Gate'),
-        _buildWiringRow('Motor Right (DIR)', 'Arduino UNO D8 / D10', 'BIN1 / BIN2 Direction Gates'),
-        _buildWiringRow('Battery (+ 7.4V)', 'Motor Driver 12V/VM', 'Direct High-Current Motor Rail'),
-        _buildWiringRow('Buck 5.0V Out', 'Arduino 5V & ESP32 5V', 'Regulated Logic Power Rail'),
+        _buildWiringRow('HC-SR04 TRIG', 'Arduino UNO D2', '10 µs Ultrasonic Pulse'),
+        _buildWiringRow('HC-SR04 ECHO', 'Arduino UNO D3', 'Echo Return Pulse Width'),
+        _buildWiringRow('TB6612FNG PWMA', 'Arduino UNO D5', 'Left Speed PWM (~976 Hz)'),
+        _buildWiringRow('TB6612FNG AIN2', 'Arduino UNO D6', 'Left Direction B Gate'),
+        _buildWiringRow('TB6612FNG AIN1', 'Arduino UNO D7', 'Left Direction A Gate'),
+        _buildWiringRow('TB6612FNG BIN1', 'Arduino UNO D8', 'Right Direction A Gate'),
+        _buildWiringRow('TB6612FNG PWMB', 'Arduino UNO D9', 'Right Speed PWM (~490 Hz)'),
+        _buildWiringRow('TB6612FNG BIN2', 'Arduino UNO D10', 'Right Direction B Gate'),
+        _buildWiringRow('TB6612FNG STBY', '5V Rail', 'Standby Active High (Bench Mode)'),
+        _buildWiringRow('Battery (+ 7.4V)', 'TB6612FNG VM', 'Direct High-Current Motor Rail'),
+        _buildWiringRow('Logic 5.0V Out', 'Arduino 5V & TB6612 VCC', 'Regulated Logic Power Rail'),
       ],
     );
   }

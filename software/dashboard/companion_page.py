@@ -148,6 +148,17 @@ COMPANION_PAGE = """<!doctype html>
         <div id="mode-val" class="hud-val" style="cursor:pointer;">MANUAL</div>
       </div>
     </div>
+    <div id="ai-model-hud" style="position:absolute;bottom:10px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:3;">
+      <div class="hud-box" style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:10px;color:#00f2fe;font-weight:bold;">MODEL:</span>
+        <span id="model-name-val" style="font-size:11px;color:#fff;font-weight:bold;">YOLOv8s</span>
+        <span id="infer-ms-val" style="font-size:10px;color:#10b981;">(18ms)</span>
+      </div>
+      <div id="decision-box" class="hud-box" style="flex:1;margin-left:8px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <span style="font-size:10px;color:#f59e0b;font-weight:bold;">DECISION:</span>
+        <span id="decision-val" style="font-size:11px;color:#e2e8f0;font-weight:bold;">CRUISING (CLEAR)</span>
+      </div>
+    </div>
   </div>
 
   <div id="controls-container">
@@ -562,10 +573,28 @@ COMPANION_PAGE = """<!doctype html>
         if (data.link && data.link.distance_cm != null) {
           updateDistanceHUD(data.link.distance_cm);
         }
+        if (data.feed) {
+          const mEl = document.getElementById("model-name-val");
+          const iEl = document.getElementById("infer-ms-val");
+          if (mEl && data.feed.model) mEl.textContent = data.feed.model;
+          if (iEl && data.feed.infer_ms != null) iEl.textContent = "(" + data.feed.infer_ms + "ms)";
+        }
         if (data.pilot && data.pilot.mode) {
           currentMode = data.pilot.mode;
           modeVal.textContent = currentMode.toUpperCase();
         }
+
+        try {
+          const decRes = await fetch("/api/decision");
+          const decData = await decRes.json();
+          if (decData && decData.decision) {
+            const decEl = document.getElementById("decision-val");
+            if (decEl) {
+              const reason = decData.decision.safety_reason || decData.decision.steering_reason || decData.decision.overlay || "CRUISING";
+              decEl.textContent = reason.toUpperCase();
+            }
+          }
+        } catch (_) {}
       } catch (e) {
         const connPill = document.getElementById("conn-pill");
         connPill.textContent = "OFFLINE";

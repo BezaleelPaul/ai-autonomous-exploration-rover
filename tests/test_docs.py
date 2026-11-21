@@ -46,14 +46,14 @@ def test_makefile_targets_used_in_readme_exist():
 def test_wiring_doc_pins_match_firmware():
     wiring = read("docs/WIRING.md")
     expected = {
-        "kPwma": "D5", "kAin1": "D6", "kAin2": "D7",
+        "kPwma": "D5", "kAin1": "D7", "kAin2": "D6",
         "kBin1": "D8", "kBin2": "D10", "kPwmb": "D9",
-        "kTrig": "D11", "kEcho": "D12",
+        "kTrig": "D2", "kEcho": "D3",
         "kLinkRx": "D4", "kLinkTx": "A2",
         "kPinHeartbeat": "A5", "kPinEstop": "A1",
         "kPinBattery": "A0", "kPinFaultOut": "A4",
-        "kRearTrig": "D2", "kRearEcho": "D3",
-        "kEncoderLeft": "D2", "kEncoderRight": "D3",
+        "kRearTrig": "D11", "kRearEcho": "D12",
+        "kEncoderLeft": "D11", "kEncoderRight": "D12",
     }
     for name, label in expected.items():
         assert re.search(rf"{name}\s*=\s*\d+", read("firmware/libraries/AIRoverCore/src/pins.h")), name

@@ -6,8 +6,8 @@
  */
 
 const int PWMA = 5;
-const int AIN1 = 6;
-const int AIN2 = 7;
+const int AIN1 = 7;
+const int AIN2 = 6;
 const int PWMB = 9;
 const int BIN1 = 8;
 const int BIN2 = 10;

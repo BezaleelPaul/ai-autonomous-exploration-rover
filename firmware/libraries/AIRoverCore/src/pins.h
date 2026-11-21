@@ -9,17 +9,17 @@
  * Analog-capable pins are written as their digital numbers (A0=14 ... A5=19)
  * because this header also compiles on a host PC without Arduino.h.
  *
- *   D2  encoder L / rear TRIG   (INT0; depends on the build, see below)
- *   D3  encoder R / rear ECHO   (INT1; depends on the build, see below)
+ *   D2  TRIG         front HC-SR04
+ *   D3  ECHO         front HC-SR04
  *   D4  link RX      <- ESP32 GPIO17 TX2 (9600 8N1)
  *   D5  PWMA         left PWM
- *   D6  AIN1         left direction A
- *   D7  AIN2         left direction B   (left of AIN1 on the module)
+ *   D6  AIN2         left direction B
+ *   D7  AIN1         left direction A
  *   D8  BIN1         right direction A
  *   D9  PWMB         right PWM          (far right of the module)
  *   D10 BIN2         right direction B
- *   D11 TRIG         front HC-SR04
- *   D12 ECHO         front HC-SR04
+ *   D11 spare / rear TRIG
+ *   D12 spare / rear ECHO
  *   D13 status LED
  *   A0  battery sense divider (100k / 47k)
  *   A1  E-stop sense (NC contact to GND, INPUT_PULLUP)
@@ -38,8 +38,8 @@ namespace pins {
 
 // TB6612FNG - left channel
 constexpr uint8_t kPwma = 5;   // D5  ~976 Hz Timer0
-constexpr uint8_t kAin1 = 6;   // D6
-constexpr uint8_t kAin2 = 7;   // D7
+constexpr uint8_t kAin1 = 7;   // D7  (user hardware wiring: AIN1 -> D7)
+constexpr uint8_t kAin2 = 6;   // D6  (user hardware wiring: AIN2 -> D6)
 // TB6612FNG - right channel
 constexpr uint8_t kBin1 = 8;   // D8
 constexpr uint8_t kBin2 = 10;  // D10
@@ -48,19 +48,16 @@ constexpr uint8_t kPwmb = 9;   // D9  ~490 Hz Timer1
 constexpr uint8_t kStby = 0;   // not a GPIO
 
 // HC-SR04 ultrasonic, front
-constexpr uint8_t kTrig = 11;  // D11
-constexpr uint8_t kEcho = 12;  // D12
+constexpr uint8_t kTrig = 2;  // D2  (user hardware wiring: TRIG -> D2)
+constexpr uint8_t kEcho = 3;  // D3  (user hardware wiring: ECHO -> D3)
 
 // HC-SR04 ultrasonic, rear (optional; enable with -DREAR_SONAR=1)
-// NOTE: D2/D3 are shared with the encoders. Enable one, not both.
-constexpr uint8_t kRearTrig = 2;   // D2
-constexpr uint8_t kRearEcho = 3;   // D3
+constexpr uint8_t kRearTrig = 11;   // D11
+constexpr uint8_t kRearEcho = 12;   // D12
 
 // Single-channel encoders (optional; enable with -DENCODERS=1).
-// D2/D3 are the Uno's only external-interrupt pins; SoftwareSerial already
-// owns the pin-change vectors, so INT0/INT1 are the only clean option.
-constexpr uint8_t kEncoderLeft = 2;   // D2, INT0
-constexpr uint8_t kEncoderRight = 3;  // D3, INT1
+constexpr uint8_t kEncoderLeft = 11;   // D11
+constexpr uint8_t kEncoderRight = 12;  // D12
 
 // ESP32 link (SoftwareSerial)
 constexpr uint8_t kLinkRx = 4;   // D4 <- ESP32 GPIO17 TX2

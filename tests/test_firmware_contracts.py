@@ -30,22 +30,22 @@ def pin(name: str) -> int:
 # ---------------------------------------------------------------------------
 def test_tb6612_pinout_matches_production_silkscreen():
     assert pin("kPwma") == 5
-    assert pin("kAin1") == 6
-    assert pin("kAin2") == 7
+    assert pin("kAin1") == 7
+    assert pin("kAin2") == 6
     assert pin("kBin1") == 8
     assert pin("kBin2") == 10
     assert pin("kPwmb") == 9
 
 
 def test_sensor_and_link_pins():
-    assert pin("kTrig") == 11
-    assert pin("kEcho") == 12
+    assert pin("kTrig") == 2
+    assert pin("kEcho") == 3
     assert pin("kLinkRx") == 4
     assert pin("kLinkTx") == 16   # A2: SoftwareSerial TX -> ESP32 GPIO16
-    assert pin("kPinHeartbeat") == 19  # A5 (D2/D3 now belong to the encoders)
-    assert pin("kEncoderLeft") == 2
-    assert pin("kEncoderRight") == 3
-    assert pin("kRearTrig") == 2   # shares D2/D3 with encoders, never both
+    assert pin("kPinHeartbeat") == 19
+    assert pin("kEncoderLeft") == 11
+    assert pin("kEncoderRight") == 12
+    assert pin("kRearTrig") == 11
     assert pin("kPinFaultOut") == 18
     assert pin("kPinEstop") == 15
     assert pin("kPinBattery") == 14

@@ -22,16 +22,16 @@ Builds supported from the same source:
 | Function | Pin | Notes |
 |---|---|---|
 | Left PWM | **D5** | `PWMA`, ~976 Hz |
-| Left direction | **D6 / D7** | `AIN1` / `AIN2` (AIN2 is left of AIN1) |
+| Left direction | **D7 / D6** | `AIN1` (D7) / `AIN2` (D6) |
 | Right direction | **D8 / D10** | `BIN1` / `BIN2` |
 | Right PWM | **D9** | `PWMB`, far right of the module row |
-| Front sonar | **D11 / D12** | `TRIG` / `ECHO` |
+| Front sonar | **D2 / D3** | `TRIG` / `ECHO` |
 | ESP32 link RX | **D4** | ← ESP32 `GPIO17`, 9600 8N1 |
 | ESP32 link TX | **A2** | → ESP32 `GPIO16` through a divider (telemetry) |
 | Heartbeat | **A5** | 1 kHz square wave → 555 → `STBY` + ESP32 `GPIO13` |
-| Wheel encoder L | **D2** | INT0, optional (mutually exclusive with the rear sonar) |
-| Wheel encoder R | **D3** | INT1, optional |
-| Rear sonar | **D2 / D3** | `TRIG` / `ECHO`, optional (same pins as the encoders) |
+| Wheel encoder L | **D11** | optional |
+| Wheel encoder R | **D12** | optional |
+| Rear sonar | **D11 / D12** | `TRIG` / `ECHO`, optional |
 | Status LED | **D13** | onboard |
 | Battery sense | **A0** | 100k / 47k divider (production) |
 | E-stop sense | **A1** | NC contact to GND, `INPUT_PULLUP` (production) |
@@ -70,8 +70,8 @@ The production module's silkscreen is unusual — **AIN2 sits left of AIN1** and
 | Pin | Silkscreen | Connect to | Constant |
 |---|---|---|---|
 | 1 | `PWMA` | **D5** | `kPwma` |
-| 2 | `AIN2` ⚠ | **D7** | `kAin2` |
-| 3 | `AIN1` ⚠ | **D6** | `kAin1` |
+| 2 | `AIN2` ⚠ | **D6** | `kAin2` |
+| 3 | `AIN1` ⚠ | **D7** | `kAin1` |
 | 4 | `STBY` | 555 output / 5 V (bench) | — |
 | 5 | `BIN1` | **D8** | `kBin1` |
 | 6 | `BIN2` | **D10** | `kBin2` |

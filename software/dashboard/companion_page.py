@@ -158,6 +158,42 @@ COMPANION_PAGE = """<!doctype html>
     const btnCam = document.getElementById("btn-camera");
     const btnTorch = document.getElementById("btn-torch");
     const videoEl = document.getElementById("cam-preview");
+    let broadcastTimer = null;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    let isUploading = false;
+
+    function startBroadcasting() {
+      if (broadcastTimer) clearInterval(broadcastTimer);
+      broadcastTimer = setInterval(() => {
+        if (!streamActive || !videoEl.videoWidth || isUploading) return;
+        canvas.width = 480;
+        canvas.height = 360;
+        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(async blob => {
+          if (!blob || !streamActive) return;
+          isUploading = true;
+          try {
+            await fetch("/api/frame", {
+              method: "POST",
+              headers: { "Content-Type": "image/jpeg" },
+              body: blob
+            });
+          } catch (e) {
+          } finally {
+            isUploading = false;
+          }
+        }, "image/jpeg", 0.65);
+      }, 70);
+    }
+
+    function stopBroadcasting() {
+      if (broadcastTimer) {
+        clearInterval(broadcastTimer);
+        broadcastTimer = null;
+      }
+      isUploading = false;
+    }
 
     btnCam.addEventListener("click", async () => {
       if (!streamActive) {
@@ -169,12 +205,14 @@ COMPANION_PAGE = """<!doctype html>
           videoEl.srcObject = localStream;
           videoTrack = localStream.getVideoTracks()[0];
           streamActive = true;
+          startBroadcasting();
           btnCam.classList.add("active");
           btnCam.textContent = "CAMERA BROADCASTING";
         } catch (err) {
           alert("Camera access failed: " + err.message);
         }
       } else {
+        stopBroadcasting();
         if (localStream) localStream.getTracks().forEach(t => t.stop());
         videoEl.srcObject = null;
         streamActive = false;

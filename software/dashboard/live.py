@@ -62,6 +62,7 @@ class LiveFeed:
         self.cam_index = cam_index
         self._lock = threading.Lock()
         self._raw: np.ndarray | None = None
+        self._pushed: np.ndarray | None = None
         self._dets: list = []
         self._infer_ms = 0.0
         self._last_infer = 0.0
@@ -159,6 +160,7 @@ class LiveFeed:
         self.source = validated
         with self._lock:
             self._raw = None
+            self._pushed = None
             self._dets = []
             self._last_infer = 0.0
         try:
@@ -182,8 +184,24 @@ class LiveFeed:
                 with contextlib.suppress(Exception):
                     note(distance_cm)
 
+    def push_frame(self, frame: np.ndarray) -> None:
+        """Accept an incoming camera frame pushed over HTTP/WebSocket from a phone companion."""
+        if frame is None or getattr(frame, "size", 0) == 0:
+            return
+        with self._lock:
+            self._pushed = frame
+            self._raw = frame
+            self._frames += 1
+            dt = time.time() - self._t0
+            if dt >= 2.0:
+                self._fps = self._frames / dt
+                self._frames = 0
+                self._t0 = time.time()
+
     # ---- threads ----
     def _grab(self) -> np.ndarray | None:
+        if getattr(self, "_pushed", None) is not None:
+            return self._pushed
         if self.source == "mock":
             f = np.zeros((480, 640, 3), dtype=np.uint8)
             f[:] = (25, 25, 30)

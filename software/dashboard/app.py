@@ -349,6 +349,30 @@ def create_control_app(
             return jsonify({"ok": False, "error": str(e)}), 500
         return jsonify({"ok": True, "source": applied})
 
+    @app.post("/api/frame")
+    def frame_post():
+        """Accept an incoming JPEG camera frame pushed over HTTP by a phone companion."""
+        if feed is None:
+            return jsonify({"ok": False, "error": "no feed"}), 503
+        data = request.get_data()
+        if not data:
+            return jsonify({"ok": False, "error": "empty body"}), 400
+        try:
+            import cv2
+            import numpy as np
+
+            arr = np.frombuffer(data, dtype=np.uint8)
+            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            if img is None:
+                return jsonify({"ok": False, "error": "jpeg decode failed"}), 400
+            push_fn = getattr(feed, "push_frame", None)
+            if callable(push_fn):
+                push_fn(img)
+                return jsonify({"ok": True, "width": int(img.shape[1]), "height": int(img.shape[0])})
+            return jsonify({"ok": False, "error": "push_frame unsupported"}), 400
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 500
+
     if journal is not None:
 
         @app.get("/api/journal")

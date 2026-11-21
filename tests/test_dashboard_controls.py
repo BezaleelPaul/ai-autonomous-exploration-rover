@@ -476,3 +476,58 @@ def test_network_source_builds_the_ip_webcam_client(monkeypatch):
         assert feed._grab() is not None
     finally:
         feed.stop()
+
+
+def test_api_frame_accepts_jpeg_and_updates_feed():
+    import cv2
+    import numpy as np
+    from software.dashboard.app import create_control_app
+
+    class DummyFeed:
+        def __init__(self):
+            self.pushed_img = None
+
+        def push_frame(self, img):
+            self.pushed_img = img
+
+        def status(self):
+            return {
+                "source": "client",
+                "backend": "mock",
+                "model": "test",
+                "camera_fps": 15.0,
+                "infer_ms": 10.0,
+                "ai_age_s": 0.1,
+                "objects": 0,
+                "detections": [],
+            }
+
+    dummy_feed = DummyFeed()
+    link = ArduinoLink("", mock=True)
+    link.connect()
+    app = create_control_app(dummy_feed, link)
+    client = app.test_client()
+
+    # Create dummy JPEG bytes
+    test_img = np.zeros((100, 150, 3), dtype=np.uint8)
+    ok, buf = cv2.imencode(".jpg", test_img)
+    assert ok
+
+    # POST valid JPEG
+    res = client.post("/api/frame", data=buf.tobytes(), content_type="image/jpeg")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["ok"] is True
+    assert data["width"] == 150
+    assert data["height"] == 100
+    assert dummy_feed.pushed_img is not None
+    assert dummy_feed.pushed_img.shape == (100, 150, 3)
+
+    # Empty payload -> 400
+    res_empty = client.post("/api/frame", data=b"", content_type="image/jpeg")
+    assert res_empty.status_code == 400
+
+    # Corrupt payload -> 400
+    res_bad = client.post("/api/frame", data=b"not_a_jpeg_image", content_type="image/jpeg")
+    assert res_bad.status_code == 400
+

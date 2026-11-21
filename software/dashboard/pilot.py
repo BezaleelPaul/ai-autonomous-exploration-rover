@@ -166,6 +166,7 @@ class MissionPilot:
         self.history: deque[DecisionRecord] = deque(
             maxlen=max(1, int(dashboard_cfg.get("decision_history", 60)))
         )
+        self._history_lock = threading.Lock()
         self._armed = False
         self._blockers: tuple[str, ...] = ()
         self._last_record: DecisionRecord | None = None
@@ -307,7 +308,8 @@ class MissionPilot:
             overlay=overlay,
         )
         self._last_record = record
-        self.history.append(record)
+        with self._history_lock:
+            self.history.append(record)
         if self._on_tick is not None:
             try:
                 self._on_tick(record)
@@ -318,6 +320,8 @@ class MissionPilot:
     # ------------------------------------------------------------ outputs
     def status(self) -> dict[str, Any]:
         rec = self._last_record
+        with self._history_lock:
+            history_list = [r.to_dict() for r in list(self.history)]
         return {
             "mode": self.mode,
             "modes": list(MODES),
@@ -325,7 +329,7 @@ class MissionPilot:
             "blockers": list(self._blockers),
             "explore": self.explorer.status(),
             "decision": rec.to_dict() if rec else None,
-            "history": [r.to_dict() for r in self.history],
+            "history": history_list,
             "history_max": self.history.maxlen,
         }
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
 from collections.abc import Callable
 from typing import Any
@@ -369,7 +370,23 @@ def create_control_app(
             push_fn = getattr(feed, "push_frame", None)
             if callable(push_fn):
                 push_fn(img)
-                return jsonify({"ok": True, "width": int(img.shape[1]), "height": int(img.shape[0])})
+                latest_dets = []
+                with contextlib.suppress(Exception):
+                    raw_dets = getattr(feed, "_dets", [])
+                    for d in raw_dets:
+                        to_dict = getattr(d, "to_dict", None)
+                        latest_dets.append(to_dict() if callable(to_dict) else {"label": str(d)})
+                tele = {}
+                with contextlib.suppress(Exception):
+                    tele = link.telemetry() if link is not None else {}
+                return jsonify({
+                    "ok": True,
+                    "width": int(img.shape[1]),
+                    "height": int(img.shape[0]),
+                    "detections": latest_dets,
+                    "distance_cm": tele.get("distance_cm"),
+                    "alert": tele.get("alert"),
+                })
             return jsonify({"ok": False, "error": "push_frame unsupported"}), 400
         except Exception as e:
             return jsonify({"ok": False, "error": str(e)}), 500

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
@@ -42,7 +43,9 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   bool _isConnected = false;
   double? _distanceCm;
   String _roverState = "STOP";
-  int _targetSpeed = 180;
+  String _pilotMode = "MANUAL";
+  int _targetSpeed = 185;
+  List<String> _detectedObjects = [];
   Timer? _pollTimer;
 
   @override
@@ -59,7 +62,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 900), (timer) {
       _fetchState();
     });
   }
@@ -78,7 +81,24 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               _roverState = link['state'] ?? 'STOP';
               if (link['distance_cm'] != null) {
                 _distanceCm = (link['distance_cm'] as num).toDouble();
+                if (_distanceCm! < 25.0) {
+                  HapticFeedback.heavyImpact();
+                }
               }
+            }
+            if (data['feed'] != null && data['feed']['detections'] != null) {
+              final rawDets = data['feed']['detections'] as List;
+              _detectedObjects = rawDets.take(5).map((d) {
+                if (d is Map) {
+                  final label = (d['label'] ?? 'TARGET').toString().toUpperCase();
+                  final score = d['score'] != null ? ' ${((d['score'] as num) * 100).toInt()}%' : '';
+                  return '$label$score';
+                }
+                return d.toString().toUpperCase();
+              }).toList();
+            }
+            if (data['pilot'] != null && data['pilot']['mode'] != null) {
+              _pilotMode = data['pilot']['mode'].toString().toUpperCase();
             }
           });
         }
@@ -91,6 +111,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   }
 
   Future<void> _sendCommand(String cmd) async {
+    HapticFeedback.lightImpact();
     try {
       final uri = Uri.parse("$_serverUrl/api/cmd");
       await http.post(
@@ -98,6 +119,25 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"c": cmd, "speed": _targetSpeed}),
       ).timeout(const Duration(seconds: 1));
+    } catch (_) {}
+  }
+
+  Future<void> _toggleMode() async {
+    HapticFeedback.mediumImpact();
+    final target = (_pilotMode == "MANUAL") ? "auto" : "manual";
+    try {
+      final uri = Uri.parse("$_serverUrl/api/mode");
+      final res = await http.post(
+        uri,
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "mode=$target",
+      ).timeout(const Duration(seconds: 2));
+      if (res.statusCode == 200) {
+        final d = jsonDecode(res.body);
+        if (mounted && d['mode'] != null) {
+          setState(() => _pilotMode = d['mode'].toString().toUpperCase());
+        }
+      }
     } catch (_) {}
   }
 
@@ -163,7 +203,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   Widget _buildDrivePadTab() {
     Color distColor = const Color(0xFF10B981);
     if (_distanceCm != null) {
-      if (_distanceCm! < 15.0) {
+      if (_distanceCm! < 18.0) {
         distColor = const Color(0xFFEF4444);
       } else if (_distanceCm! < 30.0) {
         distColor = const Color(0xFFF59E0B);
@@ -174,8 +214,8 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
       children: [
         // Telemetry HUD bar
         Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: const Color(0xFF0F131A),
             borderRadius: BorderRadius.circular(12),
@@ -186,35 +226,50 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
             children: [
               Column(
                 children: [
-                  const Text('OBSTACLE', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  const Text('OBSTACLE', style: TextStyle(fontSize: 10, color: Colors.grey)),
                   const SizedBox(height: 4),
                   Text(
                     _distanceCm != null ? '${_distanceCm!.toStringAsFixed(1)} cm' : '— cm',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: distColor),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: distColor),
                   ),
                 ],
               ),
-              Column(
-                children: [
-                  const Text('GATE STATUS', style: TextStyle(fontSize: 11, color: Colors.grey)),
-                  const SizedBox(height: 4),
-                  Text(
-                    (_distanceCm != null && _distanceCm! < 15.0) ? 'BLOCKED ($_roverState)' : 'CLEAR ($_roverState)',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: (_distanceCm != null && _distanceCm! < 15.0) ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+              GestureDetector(
+                onTap: _toggleMode,
+                child: Column(
+                  children: [
+                    const Text('AUTONOMY', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _pilotMode == 'AUTO' ? const Color(0xFF08201A) : const Color(0xFF1E293B),
+                        border: Border.all(color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE)),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _pilotMode,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               Column(
                 children: [
-                  const Text('PWM SPEED', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                  const Text('GATE STATUS', style: TextStyle(fontSize: 10, color: Colors.grey)),
                   const SizedBox(height: 4),
                   Text(
-                    '$_targetSpeed',
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF00F2FE)),
+                    (_distanceCm != null && _distanceCm! < 20.0) ? 'BLOCKED' : 'CLEAR',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: (_distanceCm != null && _distanceCm! < 20.0) ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                    ),
                   ),
                 ],
               ),
@@ -222,21 +277,45 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
           ),
         ),
 
-        // Speed Slider
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              const Text('SPEED: ', style: TextStyle(fontSize: 12, color: Colors.grey)),
-              Expanded(
-                child: Slider(
-                  value: _targetSpeed.toDouble(),
-                  min: 60,
-                  max: 255,
-                  activeColor: const Color(0xFF00F2FE),
-                  onChanged: (v) => setState(() => _targetSpeed = v.toInt()),
+        // Live AI Detection Chips HUD
+        if (_detectedObjects.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: _detectedObjects.map((det) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF121D24),
+                  border: Border.all(color: const Color(0xFF00F2FE)),
+                  borderRadius: BorderRadius.circular(4),
                 ),
-              ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.radar, size: 12, color: Color(0xFF00F2FE)),
+                    const SizedBox(width: 4),
+                    Text(det, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+                  ],
+                ),
+              )).toList(),
+            ),
+          ),
+
+        // Speed Preset Buttons
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('SPEED: ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 6),
+              _buildSpeedChip('ECO', 130),
+              const SizedBox(width: 6),
+              _buildSpeedChip('NORMAL', 185),
+              const SizedBox(width: 6),
+              _buildSpeedChip('TURBO', 255),
             ],
           ),
         ),
@@ -253,25 +332,28 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _buildDriveButton('◀', 'L'),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 // Emergency Stop
                 GestureDetector(
-                  onTap: () => _sendCommand('S'),
+                  onTap: () {
+                    HapticFeedback.heavyImpact();
+                    _sendCommand('S');
+                  },
                   child: Container(
-                    width: 80,
+                    width: 82,
                     height: 70,
                     decoration: BoxDecoration(
                       color: const Color(0xFFEF4444),
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: const [
-                        BoxShadow(color: Color(0x66EF4444), blurRadius: 12, offset: Offset(0, 4)),
+                        BoxShadow(color: Color(0x66EF4444), blurRadius: 14, offset: Offset(0, 4)),
                       ],
                     ),
                     alignment: Alignment.center,
                     child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 14),
                 _buildDriveButton('▶', 'R'),
               ],
             ),
@@ -284,13 +366,39 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
     );
   }
 
+  Widget _buildSpeedChip(String label, int speed) {
+    final isSel = (_targetSpeed == speed);
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _targetSpeed = speed);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSel ? const Color(0xFF10B981) : const Color(0xFF1E293B),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: isSel ? const Color(0xFF10B981) : const Color(0xFF334155)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: isSel ? Colors.black : Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildDriveButton(String label, String cmd) {
     return Listener(
       onPointerDown: (_) => _sendCommand(cmd),
       onPointerUp: (_) => _sendCommand('S'),
       child: Container(
-        width: 75,
-        height: 65,
+        width: 76,
+        height: 64,
         decoration: BoxDecoration(
           color: const Color(0xFF1E293B),
           border: Border.all(color: const Color(0xFF334155)),
@@ -306,8 +414,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
     final controller = TextEditingController(text: _serverUrl);
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: ListView(
         children: [
           const Text('MISSION CONTROL PAIRING', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF00F2FE))),
           const SizedBox(height: 8),
@@ -338,7 +445,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               },
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -349,9 +456,9 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
             child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('QR CODE QUICK-CONNECT', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                SizedBox(height: 6),
-                Text('1. Open Mission Deck on your desktop (http://192.168.1.11:5000).\n2. Click "PAIR PHONE (QR)".\n3. Scan with your phone to instantly link without typing URLs.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text('QUICK PAIRING METHODS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                SizedBox(height: 8),
+                Text('• Plan A (Web Companion): Scan the QR code on the desktop deck to open /companion with AR HUD & WebCam streaming.\n• Plan B (IP Webcam): Start IP Webcam app on phone, open /companion and tap "Plan B" to auto-link the stream.\n• Plan C (Soft-AP): Connect to Wi-Fi "AI_Rover_Control" at 192.168.4.1.', style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.4)),
               ],
             ),
           ),

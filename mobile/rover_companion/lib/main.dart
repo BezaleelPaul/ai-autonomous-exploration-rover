@@ -195,9 +195,9 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               final link = data['link'];
               if (link != null) {
                 _roverState = link['state'] ?? 'STOP';
-                if (link['distance_cm'] != null) {
-                  _distanceCm = (link['distance_cm'] as num).toDouble();
-                  if (_distanceCm! < 20.0 && _distanceCm! > 0) {
+                if (link.containsKey('distance_cm')) {
+                  _distanceCm = link['distance_cm'] != null ? (link['distance_cm'] as num).toDouble() : null;
+                  if (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) {
                     HapticFeedback.heavyImpact();
                   }
                 }
@@ -1307,9 +1307,21 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               const Text('OBSTACLE', style: TextStyle(fontSize: 10, color: Colors.grey)),
               const SizedBox(height: 2),
               Text(
-                _distanceCm != null && _distanceCm! > 0 ? '${_distanceCm!.toStringAsFixed(1)} cm' : '— cm',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: distColor),
+                _distanceCm != null && _distanceCm! > 0
+                    ? '${_distanceCm!.toStringAsFixed(1)} cm'
+                    : 'NO ECHO',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: _distanceCm != null && _distanceCm! > 0 ? distColor : const Color(0xFFF59E0B),
+                ),
               ),
+              if (_distanceCm == null || _distanceCm! <= 0)
+                const Text('CHECK D2/D3', style: TextStyle(fontSize: 8, color: Color(0xFFF59E0B)))
+              else if (_distanceCm! < 20.0)
+                const Text('CRITICAL', style: TextStyle(fontSize: 8, color: Color(0xFFEF4444)))
+              else
+                const Text('ULTRASONIC OK', style: TextStyle(fontSize: 8, color: Color(0xFF10B981))),
             ],
           ),
           Column(
@@ -1347,13 +1359,29 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               const Text('GATE STATUS', style: TextStyle(fontSize: 10, color: Colors.grey)),
               const SizedBox(height: 2),
               Text(
-                (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? 'BLOCKED' : 'CLEAR',
+                _distanceCm == null || _distanceCm! <= 0
+                    ? 'UNGUARDED'
+                    : (_distanceCm! < 20.0
+                        ? 'BLOCKED'
+                        : (_distanceCm! < 35.0 ? 'CAUTION' : 'CLEAR')),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
-                  color: (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                  color: _distanceCm == null || _distanceCm! <= 0
+                      ? const Color(0xFFF59E0B)
+                      : (_distanceCm! < 20.0
+                          ? const Color(0xFFEF4444)
+                          : (_distanceCm! < 35.0 ? const Color(0xFFF59E0B) : const Color(0xFF10B981))),
                 ),
               ),
+              if (_distanceCm == null || _distanceCm! <= 0)
+                const Text('NO SENSOR ECHO', style: TextStyle(fontSize: 8, color: Colors.grey))
+              else if (_distanceCm! < 20.0)
+                const Text('< 20 cm OBSTACLE', style: TextStyle(fontSize: 8, color: Color(0xFFEF4444)))
+              else if (_distanceCm! < 35.0)
+                const Text('SLOW ZONE', style: TextStyle(fontSize: 8, color: Color(0xFFF59E0B)))
+              else
+                const Text('PATH OPEN', style: TextStyle(fontSize: 8, color: Color(0xFF10B981))),
             ],
           ),
         ],
@@ -1717,8 +1745,10 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
         const SizedBox(height: 16),
         _buildWiringRow('ESP32 GPIO 17 (TX2)', 'Arduino UNO D4', 'SoftwareSerial RX 9600 baud'),
         _buildWiringRow('ESP32 GND', 'Arduino UNO GND', 'Mandatory Common Star Ground'),
-        _buildWiringRow('HC-SR04 TRIG', 'Arduino UNO D2', '10 µs Ultrasonic Pulse'),
-        _buildWiringRow('HC-SR04 ECHO', 'Arduino UNO D3', 'Echo Return Pulse Width'),
+        _buildWiringRow('HC-SR04 VCC (Power)', 'Arduino UNO 5V', 'Requires 5.0V (will NOT echo on 3.3V)'),
+        _buildWiringRow('HC-SR04 GND (Ground)', 'Arduino UNO GND', 'Ground Return Rail'),
+        _buildWiringRow('HC-SR04 TRIG', 'Arduino UNO D2', '10 µs Ultrasonic Pulse Trigger'),
+        _buildWiringRow('HC-SR04 ECHO', 'Arduino UNO D3', 'Echo Return Pulse Width (~58 µs/cm)'),
         _buildWiringRow('TB6612FNG PWMA', 'Arduino UNO D5', 'Left Speed PWM (~976 Hz)'),
         _buildWiringRow('TB6612FNG AIN2', 'Arduino UNO D6', 'Left Direction B Gate'),
         _buildWiringRow('TB6612FNG AIN1', 'Arduino UNO D7', 'Left Direction A Gate'),

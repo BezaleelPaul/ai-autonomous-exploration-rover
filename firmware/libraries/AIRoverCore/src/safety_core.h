@@ -228,7 +228,7 @@ class SafetyCore {
     distValid_ = valid && cm >= 0;
     if (!distValid_) {
       distCm_ = -1;
-      if (cmd_ == 'F') {
+      if (requireSonar_ && cmd_ == 'F') {
         stop(State::Blocked, Status::Blocked);
         obstacleLatched_ = true;
       }
@@ -304,8 +304,14 @@ class SafetyCore {
   }
 
   bool forwardBlocked() const {
+    if (!requireSonar_) {
+      return distValid_ && distCm_ < requiredGateCm(speed_);
+    }
     return !distValid_ || distCm_ < requiredGateCm(speed_);
   }
+
+  void setRequireSonar(bool req) { requireSonar_ = req; }
+  bool requireSonar() const { return requireSonar_; }
 
   bool rearBlocked() const {
     return rearSeen_ && (!rearValid_ || rearCm_ < kRearGateCm);
@@ -382,6 +388,7 @@ class SafetyCore {
   bool hasCmd_ = false;
   int distCm_ = -1;
   bool distValid_ = false;
+  bool requireSonar_ = false;
   bool sonarSeen_ = false;
   uint32_t lastSonarMs_ = 0;
   int rearCm_ = -1;

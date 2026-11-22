@@ -100,23 +100,23 @@ struct PingSensor {
       case 0:
         if ((nowMs - lastMs) >= rover::kSonarPeriodMs) {
           lastMs = nowMs;
+          digitalWrite(trig, LOW);
+          delayMicroseconds(2);
           digitalWrite(trig, HIGH);
-          phaseUs = nowUs;
-          phase = 1;
-        }
-        return -2;
-      case 1:
-        if ((nowUs - phaseUs) >= 10) {
+          delayMicroseconds(10);
           digitalWrite(trig, LOW);
           phaseUs = nowUs;
           phase = 2;
         }
         return -2;
+      case 1:
+        phase = 2;
+        return -2;
       case 2:
         if (digitalRead(echo) == HIGH) {
           riseUs = nowUs;
           phase = 3;
-        } else if ((nowUs - phaseUs) > 5000) {
+        } else if ((nowUs - phaseUs) > 6000) {
           phase = 0;
           return -1;
         }
@@ -475,21 +475,13 @@ static void printDrive(bool force) {
 static void reportSonar(int rawCm) {
   int cm = rawCm;
 #if SONAR_MEDIAN_FILTER
-  cm = sonarFilter.push(rawCm);
-#endif
-#if REQUIRE_SONAR
-  const bool valid = cm >= 0;
-#else
-  // In bench/teleop mode, absent or timed-out sonar does not lock forward drive.
-  // And a 15 cm floor gate (rover::kForwardGateCm) allows desk testing without false locks,
-  // while still emergency-stopping if an obstacle is within 15 cm.
-  const bool valid = true;
-  if (cm < 0) {
-    cm = static_cast<int>(rover::kSonarMaxCm);  // Treat -1 as clear path (400 cm)
-  } else if (cm >= rover::kForwardGateCm && cm < core.gateCm()) {
-    cm = core.gateCm() + 1;  // Above 15 cm floor: allow teleop motion
+  if (rawCm >= 0) {
+    cm = sonarFilter.push(rawCm);
+  } else {
+    cm = -1;
   }
 #endif
+  const bool valid = (cm >= 0);
   const State before = core.state();
   const char intent = core.command();
   core.updateSonar(cm, valid, millis());
@@ -498,7 +490,7 @@ static void reportSonar(int rawCm) {
   Serial.print(cm);
   Serial.print(F(" cm | Gate Check: "));
   if (!valid) {
-    Serial.print(F("FAILED (sensor lost, DIST:-1)"));
+    Serial.print(F("NO_ECHO (sensor lost, DIST:-1)"));
   } else if (cm < core.gateCm()) {
     Serial.print(F("REFUSED (< "));
     Serial.print(core.gateCm());
@@ -686,6 +678,7 @@ void setup() {
   link.begin(rover::pins::kLinkBaud);
 
   core.begin(millis());
+  core.setRequireSonar(REQUIRE_SONAR != 0);
   linkFramer.reset();
   usbFramer.reset();
   sonarFilter.reset();

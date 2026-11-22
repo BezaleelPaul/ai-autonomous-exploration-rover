@@ -563,8 +563,9 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
             label: const Text('COPY LINK', style: TextStyle(fontWeight: FontWeight.bold)),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: phoneUrl));
+              final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 SnackBar(content: Text('Copied: $phoneUrl')),
               );
             },
@@ -579,11 +580,12 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
       text: _currentStreamSource.startsWith("http") ? _currentStreamSource : "http://$_subnet.x:8080/video",
     );
     List<Map<String, dynamic>> discovered = [];
+    final messenger = ScaffoldMessenger.of(context);
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
+        builder: (dialogCtx, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF0F131A),
           title: const Row(
             children: [
@@ -765,7 +767,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
                     if (data['ok'] == true) {
                       setState(() => _currentStreamSource = data['source'] ?? targetUrl);
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           SnackBar(content: Text('✓ Video stream connected to: ${data['source']}'), backgroundColor: const Color(0xFF10B981)),
                         );
                       }
@@ -773,13 +775,13 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
                     }
                   }
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(content: Text('Failed to switch source: ${res.body}'), backgroundColor: const Color(0xFFEF4444)),
                     );
                   }
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(content: Text('Error contacting server: $e'), backgroundColor: const Color(0xFFEF4444)),
                     );
                   }

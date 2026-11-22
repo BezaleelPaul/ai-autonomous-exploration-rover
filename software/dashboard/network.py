@@ -110,6 +110,13 @@ def get_network_summary(port: int = 5000, current_source: str = "cam") -> dict[s
     """Summary of rover network state for dashboard and companion apps."""
     primary_ip = get_primary_ip()
     all_ifaces = get_all_network_interfaces()
+    is_mobile_hotspot = primary_ip.startswith("192.168.43.") or primary_ip.startswith("172.20.10.")
+    is_esp32_ap = primary_ip.startswith("192.168.4.")
+    is_ubuntu_hotspot = primary_ip.startswith("10.42.0.")
+
+    # In mobile hotspot mode, the phone hosting the hotspot is ALWAYS 192.168.43.1 (Android)
+    hotspot_phone_ip = "192.168.43.1" if primary_ip.startswith("192.168.43.") else ("172.20.10.1" if primary_ip.startswith("172.20.10.") else None)
+
     return {
         "primary_ip": primary_ip,
         "port": port,
@@ -117,7 +124,10 @@ def get_network_summary(port: int = 5000, current_source: str = "cam") -> dict[s
         "deck_url": f"http://{primary_ip}:{port}",
         "all_interfaces": all_ifaces,
         "current_source": current_source,
-        "is_esp32_softap": primary_ip.startswith("192.168.4."),
+        "is_esp32_softap": is_esp32_ap,
+        "is_mobile_hotspot": is_mobile_hotspot,
+        "is_ubuntu_hotspot": is_ubuntu_hotspot,
+        "hotspot_phone_url": f"http://{hotspot_phone_ip}:8080/video" if hotspot_phone_ip else None,
         "ip_webcam_default_url": f"http://{primary_ip.rsplit('.', 1)[0]}.x:8080/video",
     }
 
@@ -137,6 +147,9 @@ def discover_ip_cameras(
     prefix = ".".join(primary_ip.split(".")[:3])
     ports_to_probe = (8080, 4747)
     candidates: list[tuple[str, int]] = []
+
+    # If connected to Android mobile hotspot, the phone gateway is 192.168.43.1
+    special_hosts = ["192.168.43.1", "172.20.10.1", "10.42.0.1"]
 
     def probe_socket(ip: str, port: int) -> tuple[str, int] | None:
         if ip == primary_ip:

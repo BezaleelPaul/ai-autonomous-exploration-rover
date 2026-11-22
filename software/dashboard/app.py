@@ -94,7 +94,7 @@ def _mjpeg(feed) -> Any:
         while True:
             jpg = feed.jpeg()
             if jpg is None:
-                time.sleep(0.2)
+                time.sleep(0.05)
                 continue
             yield (
                 b"--frame\r\nContent-Type: image/jpeg\r\n"
@@ -104,7 +104,7 @@ def _mjpeg(feed) -> Any:
                 + jpg
                 + b"\r\n"
             )
-            time.sleep(0.1)
+            time.sleep(0.03)
 
     return Response(gen(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
@@ -210,7 +210,14 @@ def create_control_app(
         jpg = feed.jpeg()
         if jpg is None:
             return ("no frame yet", 503)
-        return Response(jpg, mimetype="image/jpeg")
+        return Response(
+            jpg,
+            mimetype="image/jpeg",
+            headers={
+                "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+                "Pragma": "no-cache",
+            },
+        )
 
     @app.get("/api/state")
     @app.get("/api/status")

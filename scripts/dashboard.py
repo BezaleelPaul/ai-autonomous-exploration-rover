@@ -193,10 +193,10 @@ def main() -> None:
         link = _open_arduino(cfg, args.arduino, args.mock_serial, getattr(args, "esp32_bridge", None))
         from software.dashboard.pilot import MissionPilot
 
-        if args.record:
-            from software.dashboard.recorder import RunRecorder
+        from software.dashboard.recorder import RunRecorder
 
-            recorder = RunRecorder(cfg, feed, None, link)
+        recorder = RunRecorder(cfg, feed, None, link)
+        if args.record:
             print(f"Recording -> {recorder.start()}")
 
         def _on_tick(decision) -> None:

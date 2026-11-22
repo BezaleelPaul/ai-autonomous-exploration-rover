@@ -154,6 +154,17 @@ class MjpegReader:
                     self.url, headers={"User-Agent": "mwe-rover/1.0"}
                 )
                 with urllib.request.urlopen(req, timeout=self.open_timeout_s) as resp:
+                    sock = getattr(resp.fp, "raw", None)
+                    if sock is not None:
+                        raw_sock = getattr(sock, "_sock", None)
+                        if raw_sock is not None:
+                            try:
+                                import socket
+
+                                raw_sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                                raw_sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)
+                            except Exception:
+                                pass
                     self._open_failed = False
                     while self._running:
                         chunk = resp.read(self.read_chunk)
@@ -170,7 +181,7 @@ class MjpegReader:
             time.sleep(self.reconnect_timeout_s)
 
     def read(self):
-        """Decode the newest frame once; None when stale or absent."""
+        """Decode the newest frame once; downscale if oversized for zero lag."""
         if not self.parser.frames:
             return None
         if (time.time() - self._last_frame_time) > self.frozen_timeout_s:
@@ -184,6 +195,12 @@ class MjpegReader:
 
             buf = np.frombuffer(self.parser.frame, dtype=np.uint8)
             img = cv2.imdecode(buf, cv2.IMREAD_COLOR)
+            # Downscale high-res phone frames (1080p/720p) to 640 width on ingest
+            # to eliminate OpenCV decode, inference, and re-encode latency bottlenecks
+            if img is not None and img.shape[1] > 640:
+                h, w = img.shape[:2]
+                new_h = int(h * (640.0 / w))
+                img = cv2.resize(img, (640, new_h), interpolation=cv2.INTER_LINEAR)
         except Exception:
             self.failures += 1
             return None

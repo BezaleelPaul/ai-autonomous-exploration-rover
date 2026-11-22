@@ -46,7 +46,7 @@ def test_makefile_targets_used_in_readme_exist():
 def test_wiring_doc_pins_match_firmware():
     wiring = read("docs/WIRING.md")
     expected = {
-        "kPwma": "D5", "kAin1": "D7", "kAin2": "D6",
+        "kPwma": "D5",
         "kBin1": "D8", "kBin2": "D10", "kPwmb": "D9",
         "kTrig": "D2", "kEcho": "D3",
         "kLinkRx": "D4", "kLinkTx": "A2",

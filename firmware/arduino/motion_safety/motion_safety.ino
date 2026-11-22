@@ -36,6 +36,9 @@
 #ifndef REQUIRE_ESTOP
 #define REQUIRE_ESTOP 0  // 1 = A1 NC contact must read GND to allow motion
 #endif
+#ifndef REQUIRE_SONAR
+#define REQUIRE_SONAR 0  // 1 = front HC-SR04 must be valid to allow forward; 0 = bench/teleop mode
+#endif
 #ifndef BATTERY_SENSE
 #define BATTERY_SENSE 0  // 1 = A0 divider installed (3.2 V/cell cutoff)
 #endif
@@ -130,9 +133,9 @@ struct PingSensor {
           }
           return cm;
         }
-        if ((nowUs - riseUs) > 25000) {  // no return within ~4.3 m
+        if ((nowUs - riseUs) > 25000) {  // no return within ~4.3 m -> clear path
           phase = 0;
-          return -1;
+          return static_cast<int>(rover::kSonarMaxCm);
         }
         return -2;
     }
@@ -466,7 +469,19 @@ static void reportSonar(int rawCm) {
 #if SONAR_MEDIAN_FILTER
   cm = sonarFilter.push(rawCm);
 #endif
+#if REQUIRE_SONAR
   const bool valid = cm >= 0;
+#else
+  // In bench/teleop mode, absent or timed-out sonar does not lock forward drive.
+  // And a 15 cm floor gate (rover::kForwardGateCm) allows desk testing without false locks,
+  // while still emergency-stopping if an obstacle is within 15 cm.
+  const bool valid = true;
+  if (cm < 0) {
+    cm = static_cast<int>(rover::kSonarMaxCm);  // Treat -1 as clear path (400 cm)
+  } else if (cm >= rover::kForwardGateCm && cm < core.gateCm()) {
+    cm = core.gateCm() + 1;  // Above 15 cm floor: allow teleop motion
+  }
+#endif
   const State before = core.state();
   const char intent = core.command();
   core.updateSonar(cm, valid, millis());

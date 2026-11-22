@@ -38,8 +38,8 @@ namespace pins {
 
 // TB6612FNG - left channel
 constexpr uint8_t kPwma = 5;   // D5  ~976 Hz Timer0
-constexpr uint8_t kAin1 = 7;   // D7  (user hardware wiring: AIN1 -> D7)
-constexpr uint8_t kAin2 = 6;   // D6  (user hardware wiring: AIN2 -> D6)
+constexpr uint8_t kAin1 = 6;   // D6  Left direction A (Forward = HIGH)
+constexpr uint8_t kAin2 = 7;   // D7  Left direction B (Reverse = HIGH)
 // TB6612FNG - right channel
 constexpr uint8_t kBin1 = 8;   // D8
 constexpr uint8_t kBin2 = 10;  // D10

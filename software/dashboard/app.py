@@ -45,6 +45,7 @@ def create_app(get_state_fn: Callable[[], dict[str, Any]]) -> Any:
         )
 
     @app.get("/api/state")
+    @app.get("/api/status")
     def state():
         try:
             s = get_state_fn()
@@ -67,6 +68,7 @@ def create_live_app(feed) -> Any:
         return PAGE
 
     @app.get("/api/state")
+    @app.get("/api/status")
     def state():
         return jsonify(feed.state())
 
@@ -191,6 +193,7 @@ def create_control_app(
         return _mjpeg(feed)
 
     @app.get("/api/state")
+    @app.get("/api/status")
     def state():
         out: dict[str, Any] = {}
         try:

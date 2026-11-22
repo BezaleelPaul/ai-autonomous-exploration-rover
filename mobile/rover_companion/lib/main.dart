@@ -775,9 +775,31 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00F2FE), foregroundColor: Colors.black),
                     icon: const Icon(Icons.link),
                     label: const Text('SAVE & CONNECT', style: TextStyle(fontWeight: FontWeight.bold)),
-                    onPressed: () {
-                      setState(() => _serverUrl = _urlController.text.trim());
-                      _fetchState();
+                    onPressed: () async {
+                      var url = _urlController.text.trim();
+                      if (url.isNotEmpty) {
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                          url = 'http://$url';
+                        }
+                        final uri = Uri.tryParse(url);
+                        if (uri != null && uri.host.isNotEmpty && uri.port == 80 && !url.contains(':80') && !url.contains('192.168.4.1')) {
+                          url = 'http://${uri.host}:5000';
+                        }
+                      }
+                      setState(() {
+                        _serverUrl = url;
+                        _urlController.text = url;
+                      });
+                      await _fetchState();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(_isConnected ? '✓ Connected to $_serverUrl' : '✗ Could not reach $_serverUrl. Check Wi-Fi & port :5000'),
+                            backgroundColor: _isConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),

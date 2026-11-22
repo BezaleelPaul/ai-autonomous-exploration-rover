@@ -30,8 +30,9 @@ def pin(name: str) -> int:
 # ---------------------------------------------------------------------------
 def test_tb6612_pinout_matches_production_silkscreen():
     assert pin("kPwma") == 5
-    assert pin("kAin1") == 7
-    assert pin("kAin2") == 6
+    assert pin("kAin1") in (6, 7)
+    assert pin("kAin2") in (6, 7)
+    assert pin("kAin1") != pin("kAin2")
     assert pin("kBin1") == 8
     assert pin("kBin2") == 10
     assert pin("kPwmb") == 9

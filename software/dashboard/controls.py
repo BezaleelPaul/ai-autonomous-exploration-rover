@@ -43,10 +43,13 @@ def validate_command(command: str) -> str:
 def parse_telemetry_line(line: str, state: dict[str, Any]) -> dict[str, Any]:
     """Fold one firmware telemetry line into ``state`` and return it."""
     text = (line or "").strip()
+    if text.startswith("[UNO]"):
+        text = text[5:].strip()
     if not text:
         return state
     if text.startswith(DIST_PREFIX):
-        raw = text[len(DIST_PREFIX) :].strip()
+        raw_part = text[len(DIST_PREFIX) :].strip()
+        raw = raw_part.split()[0] if raw_part else ""
         try:
             value = float(raw)
         except ValueError:
@@ -61,13 +64,26 @@ def parse_telemetry_line(line: str, state: dict[str, Any]) -> dict[str, Any]:
         return state
     if text.startswith("BOOT"):
         state["status"] = "STOP"
-    for part in text.split():
-        if part.startswith(CMD_PREFIX):
-            state["command"] = part.split(":", 1)[1]
+    tokens = text.split()
+    for i, part in enumerate(tokens):
+        if part == "CMD:" and i + 1 < len(tokens):
+            state["command"] = tokens[i + 1]
+        elif part.startswith(CMD_PREFIX):
+            val = part.split(":", 1)[1]
+            if val:
+                state["command"] = val
+        elif part == "STATE:" and i + 1 < len(tokens):
+            state["state"] = tokens[i + 1]
         elif part.startswith(STATE_PREFIX):
-            state["state"] = part.split(":", 1)[1]
+            val = part.split(":", 1)[1]
+            if val:
+                state["state"] = val
+        elif part == "STATUS:" and i + 1 < len(tokens):
+            state["status"] = tokens[i + 1]
         elif part.startswith(STATUS_PREFIX):
-            state["status"] = part.split(":", 1)[1]
+            val = part.split(":", 1)[1]
+            if val:
+                state["status"] = val
     return state
 
 

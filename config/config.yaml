@@ -272,7 +272,7 @@ perception:
   serial_mode: "auto"          # auto | usb | bluetooth | http  (http = ESP32 WiFi bridge)
   serial_port: ""              # explicit port, e.g. COM5 for a BT adapter; empty = auto-detect
   rover_url: "http://192.168.4.1"  # ESP32 soft-AP base URL for serial_mode: http
-  baud_rate: 9600
+  baud_rate: 115200
   heartbeat_interval_s: 0.4    # resend the active command; must beat the Uno's
                                # 500 ms link watchdog (motion_safety.ino), and
                                # also stays < safety.comm_timeout_s (3 s)

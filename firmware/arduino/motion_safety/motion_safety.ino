@@ -198,7 +198,16 @@ rover::Fault lastFault = rover::Fault::None;
 // Output stage
 // ---------------------------------------------------------------------------
 static void applyOutputs() {
-  const rover::Outputs& o = core.outputs();
+  rover::Outputs o = core.outputs();
+
+  // Swap Left and Right pivot direction to match physical motor harness orientation
+  if (core.command() == 'L') {
+    o.dirL = 1;
+    o.dirR = -1;
+  } else if (core.command() == 'R') {
+    o.dirL = -1;
+    o.dirR = 1;
+  }
 
   // Safety: when the core is not driving, the driver sees 0 immediately,
   // regardless of where the 50 ms control loop is.
@@ -233,8 +242,7 @@ static void applyOutputs() {
 }
 
 static void printActuation() {
-  const rover::Outputs& o = core.outputs();
-  const rover::PinLevels p = rover::pinLevels(o);
+  const rover::PinLevels p = rover::pinLevels(lastOut);
   Serial.print(F("[UNO] ACT: PWMA="));
   Serial.print(writtenPwmL);
   Serial.print(F(" PWMB="));

@@ -23,3 +23,4 @@ config/learned.yaml
 reports/~$*.docx
 first five sheets (1).docx
 front sheet and certificate (1).docx
+build/

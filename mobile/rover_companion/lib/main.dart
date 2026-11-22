@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -338,6 +339,54 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
         }
       }
     } catch (_) {}
+  }
+
+  Future<void> _startOrRestartBackend() async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Starting Mission Control server in background...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    try {
+      final hasArduino = File('/dev/ttyACM0').existsSync() || File('/dev/ttyUSB0').existsSync();
+      final arduinoPort = File('/dev/ttyACM0').existsSync() ? '/dev/ttyACM0' : '/dev/ttyUSB0';
+      await Process.start(
+        'python3',
+        [
+          '-u',
+          'scripts/dashboard.py',
+          '--controls',
+          '--host',
+          '0.0.0.0',
+          '--port',
+          '5000',
+          '--no-plugins',
+          '--no-clip',
+          if (hasArduino) '--arduino' else '--esp32-bridge',
+          if (hasArduino) arduinoPort else 'http://192.168.4.1',
+        ],
+        workingDirectory: '/home/bezaleelpaul/Projects/AI ROVER',
+        mode: ProcessStartMode.detached,
+      );
+      await Future.delayed(const Duration(seconds: 2));
+      await _fetchState();
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(_isConnected ? '✓ Mission Control server is now ONLINE!' : 'Backend initiated. Connecting...'),
+            backgroundColor: _isConnected ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to launch backend: $e'), backgroundColor: const Color(0xFFEF4444)),
+        );
+      }
+    }
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
@@ -1629,6 +1678,57 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               ),
             ],
           ),
+          if (Platform.isLinux || Platform.isMacOS || Platform.isWindows) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                border: Border.all(color: _isConnected ? const Color(0xFF10B981) : const Color(0xFF3B82F6)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        _isConnected ? Icons.check_circle : Icons.power_settings_new,
+                        color: _isConnected ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _isConnected ? 'MISSION CONTROL BACKEND: ACTIVE' : 'MISSION CONTROL BACKEND: OFFLINE',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: _isConnected ? const Color(0xFF10B981) : const Color(0xFF3B82F6),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _isConnected
+                        ? 'Backend is responding on port 5000. Telemetry and YOLO inference active.'
+                        : 'Click below to start the Python Mission Control server automatically without using any terminal.',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isConnected ? const Color(0xFF1E293B) : const Color(0xFF3B82F6),
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: Icon(_isConnected ? Icons.refresh : Icons.play_arrow, size: 16),
+                    label: Text(_isConnected ? 'RESTART BACKEND' : 'LAUNCH BACKEND SERVER NOW', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+                    onPressed: _startOrRestartBackend,
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           const Text('NETWORK PRESETS (TAP TO CONNECT)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 8),

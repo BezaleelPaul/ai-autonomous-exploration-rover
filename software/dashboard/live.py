@@ -153,13 +153,67 @@ class LiveFeed:
                 plugin.stop()
 
     def set_source(self, url: str) -> str:
-        """Switch to a new network stream at runtime (the phone IP changes).
+        """Switch camera source at runtime (phone IP webcam, laptop webcam, or mock).
 
-        Validates first (ValueError on garbage), opens the new client with its
-        bounded connect timeout, then swaps it in — the capture thread keeps
-        running and picks the new client up on its next grab. The last frame
-        is dropped so the dashboard shows NO VIDEO until the new source talks.
+        Validates network URLs or switches back to local OpenCV camera when
+        url is "cam" / "laptop" / "local" / "webcam" / "0". The capture thread
+        keeps running and picks the new client up on its next grab.
         """
+        target = (url or "").strip().lower()
+
+        # 1. Local laptop webcam
+        if target in ("cam", "cam:0", "laptop", "local", "webcam", "0") or target.startswith("cam:"):
+            import cv2
+
+            idx = int(target.split(":")[1]) if ":" in target and target.split(":")[1].isdigit() else self.cam_index
+            new_cap = cv2.VideoCapture(idx)
+            if not new_cap.isOpened():
+                for alt_idx in (0, 2, 1, 3, 4):
+                    if alt_idx == idx:
+                        continue
+                    alt_cap = cv2.VideoCapture(alt_idx)
+                    if alt_cap.isOpened():
+                        new_cap = alt_cap
+                        idx = alt_idx
+                        break
+            old_net, old_cap = self._net, self._cap
+            self._cap = new_cap
+            self._net = None
+            self.source = f"cam:{idx}"
+            self.cam_index = idx
+            with self._lock:
+                self._raw = None
+                self._pushed = None
+                self._dets = []
+                self._last_infer = 0.0
+            if old_net is not None:
+                with contextlib.suppress(Exception):
+                    old_net.close()
+            if old_cap is not None and old_cap != new_cap:
+                with contextlib.suppress(Exception):
+                    old_cap.release()
+            return self.source
+
+        # 2. Simulated mock feed
+        if target == "mock":
+            old_net, old_cap = self._net, self._cap
+            self._net = None
+            self._cap = None
+            self.source = "mock"
+            with self._lock:
+                self._raw = None
+                self._pushed = None
+                self._dets = []
+                self._last_infer = 0.0
+            if old_net is not None:
+                with contextlib.suppress(Exception):
+                    old_net.close()
+            if old_cap is not None:
+                with contextlib.suppress(Exception):
+                    old_cap.release()
+            return "mock"
+
+        # 3. Phone IP Webcam or RTSP network stream
         from software.perception_node.stream import open_ip_webcam, validate_stream_url
 
         validated = validate_stream_url(url)
@@ -174,16 +228,12 @@ class LiveFeed:
             self._pushed = None
             self._dets = []
             self._last_infer = 0.0
-        try:
-            if old_net is not None:
+        if old_net is not None:
+            with contextlib.suppress(Exception):
                 old_net.close()
-        except Exception:
-            pass
-        try:
-            if old_cap is not None:
+        if old_cap is not None:
+            with contextlib.suppress(Exception):
                 old_cap.release()
-        except Exception:
-            pass
         return validated
 
     def note_distance(self, distance_cm: float) -> None:

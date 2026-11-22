@@ -14,7 +14,7 @@ class RoverCompanionApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'RoverLink Companion',
+      title: 'RoverLink Ground Control Station',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: const Color(0xFF080A0F),
@@ -39,11 +39,15 @@ class RoverMainScreen extends StatefulWidget {
 
 class _RoverMainScreenState extends State<RoverMainScreen> {
   int _currentIndex = 0;
-  String _serverUrl = "http://192.168.4.2:5000";
+  String _serverUrl = "http://127.0.0.1:5000";
   late final TextEditingController _urlController;
+  late final FocusNode _keyboardFocusNode;
+
   bool _isConnected = false;
   bool _isDirectEsp32 = false;
   bool _isScanning = false;
+  bool _isScanningCameras = false;
+
   double? _distanceCm;
   String _roverState = "STOP";
   String _pilotMode = "MANUAL";
@@ -56,13 +60,27 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
   String _decisionOverlay = "STOP";
   int _frameCounter = 0;
   bool _liveStreamActive = true;
+
+  // Network & camera state from Mission Control
+  String _primaryLanIp = "192.168.1.11";
+  String _companionUrl = "http://192.168.1.11:5000/companion";
+  String _currentStreamSource = "cam:0";
+
   Timer? _pollTimer;
   Timer? _frameTimer;
+
+  // Set of actively pressed motion keys to prevent repeat stutter
+  final Set<LogicalKeyboardKey> _pressedMotionKeys = {};
+
+  String get _subnet => _primaryLanIp.contains('.')
+      ? _primaryLanIp.substring(0, _primaryLanIp.lastIndexOf('.'))
+      : "192.168.1";
 
   @override
   void initState() {
     super.initState();
     _urlController = TextEditingController(text: _serverUrl);
+    _keyboardFocusNode = FocusNode();
     _startPolling();
     _startFrameTimer();
   }
@@ -72,12 +90,13 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
     _pollTimer?.cancel();
     _frameTimer?.cancel();
     _urlController.dispose();
+    _keyboardFocusNode.dispose();
     super.dispose();
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(milliseconds: 750), (timer) {
+    _pollTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
       _fetchState();
       if (!_isDirectEsp32) {
         _fetchDecision();
@@ -87,7 +106,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
 
   void _startFrameTimer() {
     _frameTimer?.cancel();
-    _frameTimer = Timer.periodic(const Duration(milliseconds: 140), (timer) {
+    _frameTimer = Timer.periodic(const Duration(milliseconds: 120), (timer) {
       if (mounted && _liveStreamActive && _isConnected && !_isDirectEsp32) {
         setState(() {
           _frameCounter = (_frameCounter + 1) % 100000;
@@ -149,16 +168,29 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
                 _modelName = (feed['model'] ?? feed['backend'] ?? 'YOLOv8s').toString();
                 _inferMs = (feed['infer_ms'] as num?)?.toInt() ?? 0;
                 _cameraFps = (feed['camera_fps'] as num?)?.toDouble() ?? 0.0;
+                _currentStreamSource = (feed['source'] ?? _currentStreamSource).toString();
                 if (feed['detections'] != null) {
                   final rawDets = feed['detections'] as List;
-                  _detectedObjects = rawDets.take(5).map((d) {
+                  _detectedObjects = rawDets.take(6).map((d) {
                     if (d is Map) {
                       final label = (d['label'] ?? 'TARGET').toString().toUpperCase();
-                      final score = d['score'] != null ? ' ${((d['score'] as num) * 100).toInt()}%' : '';
+                      final score = d['conf'] != null ? ' ${((d['conf'] as num) * 100).toInt()}%' : '';
                       return '$label$score';
                     }
                     return d.toString().toUpperCase();
                   }).toList();
+                }
+              }
+              if (data['network'] != null) {
+                final net = data['network'];
+                if (net['primary_ip'] != null) {
+                  _primaryLanIp = net['primary_ip'].toString();
+                }
+                if (net['companion_url'] != null) {
+                  _companionUrl = net['companion_url'].toString();
+                }
+                if (net['current_source'] != null) {
+                  _currentStreamSource = net['current_source'].toString();
                 }
               }
               if (data['pilot'] != null && data['pilot']['mode'] != null) {
@@ -200,12 +232,10 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
     HapticFeedback.lightImpact();
     try {
       if (_isDirectEsp32) {
-        // Direct ESP32 endpoint: /cmd?c=F180
         final speedVal = cmd == "S" ? "" : "$_targetSpeed";
         final uri = Uri.parse("$_serverUrl/cmd?c=$cmd$speedVal");
         await http.get(uri).timeout(const Duration(milliseconds: 600));
       } else {
-        // Python Mission Deck: /api/cmd JSON POST
         final uri = Uri.parse("$_serverUrl/api/cmd");
         await http.post(
           uri,
@@ -236,21 +266,94 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
     } catch (_) {}
   }
 
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    final key = event.logicalKey;
+    final isMovementKey = key == LogicalKeyboardKey.keyW ||
+        key == LogicalKeyboardKey.arrowUp ||
+        key == LogicalKeyboardKey.keyS ||
+        key == LogicalKeyboardKey.arrowDown ||
+        key == LogicalKeyboardKey.keyA ||
+        key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.keyD ||
+        key == LogicalKeyboardKey.arrowRight;
+
+    if (event is KeyDownEvent) {
+      if (key == LogicalKeyboardKey.space) {
+        _sendCommand('S');
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.keyM) {
+        _toggleMode();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.digit1) {
+        setState(() => _targetSpeed = 130);
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.digit2) {
+        setState(() => _targetSpeed = 185);
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.digit3) {
+        setState(() => _targetSpeed = 255);
+        return KeyEventResult.handled;
+      }
+
+      if (isMovementKey) {
+        if (!_pressedMotionKeys.contains(key)) {
+          _pressedMotionKeys.add(key);
+          if (key == LogicalKeyboardKey.keyW || key == LogicalKeyboardKey.arrowUp) {
+            _sendCommand('F');
+          } else if (key == LogicalKeyboardKey.keyS || key == LogicalKeyboardKey.arrowDown) {
+            _sendCommand('B');
+          } else if (key == LogicalKeyboardKey.keyA || key == LogicalKeyboardKey.arrowLeft) {
+            _sendCommand('L');
+          } else if (key == LogicalKeyboardKey.keyD || key == LogicalKeyboardKey.arrowRight) {
+            _sendCommand('R');
+          }
+        }
+        return KeyEventResult.handled;
+      }
+    } else if (event is KeyUpEvent) {
+      if (isMovementKey) {
+        _pressedMotionKeys.remove(key);
+        if (_pressedMotionKeys.isEmpty) {
+          _sendCommand('S');
+        } else {
+          // If another motion key is still held, prioritize it
+          final remaining = _pressedMotionKeys.last;
+          if (remaining == LogicalKeyboardKey.keyW || remaining == LogicalKeyboardKey.arrowUp) {
+            _sendCommand('F');
+          } else if (remaining == LogicalKeyboardKey.keyS || remaining == LogicalKeyboardKey.arrowDown) {
+            _sendCommand('B');
+          } else if (remaining == LogicalKeyboardKey.keyA || remaining == LogicalKeyboardKey.arrowLeft) {
+            _sendCommand('L');
+          } else if (remaining == LogicalKeyboardKey.keyD || remaining == LogicalKeyboardKey.arrowRight) {
+            _sendCommand('R');
+          }
+        }
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
+  }
+
   Future<void> _autoDetectServer() async {
     setState(() => _isScanning = true);
     final candidates = [
-      "http://192.168.4.2:5000",   // Laptop on ESP32 Rover Wi-Fi (connected 1st)
-      "http://192.168.4.3:5000",   // Laptop on ESP32 Rover Wi-Fi (connected 2nd)
-      "http://192.168.1.11:5000",  // Laptop on Home Wi-Fi LAN
-      "http://10.42.0.1:5000",     // Laptop on Ubuntu Wi-Fi Hotspot
-      "http://192.168.4.1",        // Direct ESP32 Soft-AP
+      "http://127.0.0.1:5000",
       "http://localhost:5000",
+      "http://192.168.1.11:5000",
+      "http://192.168.4.2:5000",
+      "http://192.168.4.3:5000",
+      "http://10.42.0.1:5000",
+      "http://192.168.4.1",
     ];
 
     for (final candidate in candidates) {
       try {
         final checkUrl = candidate.contains(":5000") ? "$candidate/api/state" : "$candidate/status";
-        final res = await http.get(Uri.parse(checkUrl)).timeout(const Duration(milliseconds: 900));
+        final res = await http.get(Uri.parse(checkUrl)).timeout(const Duration(milliseconds: 800));
         if (res.statusCode == 200) {
           if (mounted) {
             setState(() {
@@ -258,10 +361,12 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               _urlController.text = candidate;
               _isScanning = false;
             });
-            _fetchState();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('✓ Connected to $candidate!'), backgroundColor: const Color(0xFF10B981)),
-            );
+            await _fetchState();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('✓ Connected to $candidate!'), backgroundColor: const Color(0xFF10B981)),
+              );
+            }
           }
           return;
         }
@@ -272,68 +377,415 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
       setState(() => _isScanning = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Auto-detect: No server responded. Check your phone Wi-Fi connection.'),
+          content: Text('Auto-detect: No rover server responded. Check network connection.'),
           backgroundColor: Color(0xFFEF4444),
         ),
       );
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+  void _openPhoneCameraHUD() {
+    // Generate phone-accessible URL: if serverUrl is loopback, replace with real Wi-Fi LAN IP
+    String phoneUrl = _companionUrl;
+    if (_serverUrl.contains("127.0.0.1") || _serverUrl.contains("localhost")) {
+      phoneUrl = "http://$_primaryLanIp:5000/companion";
+    } else if (!_serverUrl.contains("192.168.4.1")) {
+      phoneUrl = "$_serverUrl/companion";
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF0F131A),
-        elevation: 0,
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.bolt, color: Color(0xFF00F2FE), size: 22),
-            const SizedBox(width: 8),
-            const Text(
-              'ROVERLINK',
-              style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 16),
+            Icon(Icons.phone_android, color: Color(0xFF00F2FE), size: 20),
+            SizedBox(width: 8),
+            Text('PHONE CAMERA SETUP', style: TextStyle(color: Color(0xFF00F2FE), fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Mount your phone on the rover to act as its AI vision eye. Choose one of two wireless camera methods:',
+                style: TextStyle(fontSize: 12, color: Colors.grey, height: 1.3),
+              ),
+              const SizedBox(height: 14),
+
+              // Option A: IP Webcam App (Recommended)
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF08201A),
+                  border: Border.all(color: const Color(0xFF10B981)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.stars, color: Color(0xFF10B981), size: 16),
+                        SizedBox(width: 6),
+                        Text('METHOD 1: "IP WEBCAM" APP (RECOMMENDED)', style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 11)),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      '1. Open "IP Webcam" on Android (by Pavel Khlebovich)\n2. Tap "Start server" at bottom\n3. Note the IP shown (e.g. http://192.168.1.X:8080)\n4. Tap "SRC: ..." in this desktop app to auto-detect or connect!',
+                      style: TextStyle(fontSize: 11, color: Colors.white, height: 1.4),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Option B: Browser AR Companion
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF131822),
+                  border: Border.all(color: const Color(0xFF1E293B)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.web, color: Color(0xFF00F2FE), size: 16),
+                        SizedBox(width: 6),
+                        Text('METHOD 2: BROWSER AR HUD', style: TextStyle(color: Color(0xFF00F2FE), fontWeight: FontWeight.bold, fontSize: 11)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    const Text('Open this link in Chrome/Safari on your phone:', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    const SizedBox(height: 4),
+                    SelectableText(
+                      phoneUrl,
+                      style: const TextStyle(color: Color(0xFF00F2FE), fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('DISMISS'),
+            onPressed: () => Navigator.pop(ctx),
+          ),
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF00F2FE))),
+            icon: const Icon(Icons.videocam, size: 16, color: Color(0xFF00F2FE)),
+            label: const Text('CONFIGURE CAMERA SOURCE', style: TextStyle(color: Color(0xFF00F2FE), fontSize: 11, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openCameraSourceDialog();
+            },
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981), foregroundColor: Colors.black),
+            icon: const Icon(Icons.copy, size: 16),
+            label: const Text('COPY LINK', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: phoneUrl));
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Copied: $phoneUrl')),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openCameraSourceDialog() {
+    final textController = TextEditingController(
+      text: _currentStreamSource.startsWith("http") ? _currentStreamSource : "http://$_subnet.x:8080/video",
+    );
+    List<Map<String, dynamic>> discovered = [];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF0F131A),
+          title: const Row(
+            children: [
+              Icon(Icons.videocam, color: Color(0xFF00F2FE), size: 20),
+              SizedBox(width: 8),
+              Text('CAMERA STREAM SOURCE', style: TextStyle(color: Color(0xFF00F2FE), fontSize: 15, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SizedBox(
+            width: 480,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Current Source Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E293B),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('ACTIVE: ', style: TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
+                      Expanded(
+                        child: Text(
+                          _currentStreamSource.startsWith("cam") ? 'Laptop Webcam ($_currentStreamSource)' : _currentStreamSource,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Auto-Detect Button
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFF10B981)),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        icon: _isScanningCameras
+                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)))
+                            : const Icon(Icons.radar, size: 16, color: Color(0xFF10B981)),
+                        label: Text(
+                          _isScanningCameras ? 'SCANNING WI-FI SUBNET...' : 'AUTO-DETECT PHONE IP WEBCAM',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                        ),
+                        onPressed: _isScanningCameras
+                            ? null
+                            : () async {
+                                setDialogState(() => _isScanningCameras = true);
+                                try {
+                                  final uri = Uri.parse("$_serverUrl/api/camera/discover");
+                                  final res = await http.get(uri).timeout(const Duration(seconds: 4));
+                                  if (res.statusCode == 200) {
+                                    final data = jsonDecode(res.body);
+                                    if (data['cameras'] is List) {
+                                      final list = (data['cameras'] as List).cast<Map<String, dynamic>>();
+                                      setDialogState(() {
+                                        discovered = list;
+                                        if (discovered.isNotEmpty) {
+                                          textController.text = discovered.first['url'] ?? textController.text;
+                                        }
+                                      });
+                                    }
+                                  }
+                                } catch (_) {}
+                                setDialogState(() => _isScanningCameras = false);
+                              },
+                      ),
+                    ),
+                  ],
+                ),
+
+                if (discovered.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const Text('DISCOVERED CAMERAS ON WI-FI:', style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  ...discovered.map((c) => InkWell(
+                        onTap: () {
+                          textController.text = c['url'] ?? '';
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF08201A),
+                            border: Border.all(color: const Color(0xFF10B981)),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.camera_alt, color: Color(0xFF10B981), size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${c['name']} • ${c['url']}',
+                                  style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              const Text('SELECT', style: TextStyle(fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      )),
+                ],
+
+                const SizedBox(height: 12),
+                const Text('CUSTOM STREAM URL (IP WEBCAM / RTSP / "cam"):', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: textController,
+                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                  decoration: const InputDecoration(
+                    hintText: 'e.g. http://192.168.1.15:8080/video or cam',
+                    hintStyle: TextStyle(color: Colors.grey, fontSize: 11),
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Presets
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    ActionChip(
+                      backgroundColor: const Color(0xFF1E293B),
+                      label: const Text('Laptop Webcam', style: TextStyle(fontSize: 10, color: Color(0xFF00F2FE))),
+                      onPressed: () => textController.text = "cam",
+                    ),
+                    ActionChip(
+                      backgroundColor: const Color(0xFF1E293B),
+                      label: const Text('IP Webcam (8080)', style: TextStyle(fontSize: 10, color: Color(0xFF10B981))),
+                      onPressed: () {
+                        textController.text = "http://$_subnet.x:8080/video";
+                      },
+                    ),
+                    ActionChip(
+                      backgroundColor: const Color(0xFF1E293B),
+                      label: const Text('DroidCam (4747)', style: TextStyle(fontSize: 10, color: Colors.white)),
+                      onPressed: () {
+                        textController.text = "http://$_subnet.x:4747/video";
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: _isConnected ? const Color(0xFF0D2818) : const Color(0xFF2D1212),
-                border: Border.all(
-                  color: _isConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _isConnected ? (_isDirectEsp32 ? 'ESP32 LINK' : 'AI ONLINE') : 'OFFLINE',
-                style: TextStyle(
-                  color: _isConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('CANCEL'),
+              onPressed: () => Navigator.pop(ctx),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00F2FE), foregroundColor: Colors.black),
+              child: const Text('SWITCH STREAM SOURCE', style: TextStyle(fontWeight: FontWeight.bold)),
+              onPressed: () async {
+                final targetUrl = textController.text.trim();
+                if (targetUrl.isEmpty) return;
+                Navigator.pop(ctx);
+                try {
+                  final uri = Uri.parse("$_serverUrl/api/stream");
+                  final res = await http.post(
+                    uri,
+                    headers: {"Content-Type": "application/json"},
+                    body: jsonEncode({"url": targetUrl}),
+                  ).timeout(const Duration(seconds: 4));
+                  if (res.statusCode == 200) {
+                    final data = jsonDecode(res.body);
+                    if (data['ok'] == true) {
+                      setState(() => _currentStreamSource = data['source'] ?? targetUrl);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('✓ Switched video source to: ${data['source']}'), backgroundColor: const Color(0xFF10B981)),
+                        );
+                      }
+                      return;
+                    }
+                  }
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to switch source: ${res.body}'), backgroundColor: const Color(0xFFEF4444)),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error contacting server: $e'), backgroundColor: const Color(0xFFEF4444)),
+                    );
+                  }
+                }
+              },
             ),
           ],
         ),
       ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _buildDrivePadTab(),
-          _buildPairingTab(),
-          _buildWiringGuideTab(),
-        ],
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        backgroundColor: const Color(0xFF0F131A),
-        selectedItemColor: const Color(0xFF00F2FE),
-        unselectedItemColor: Colors.grey,
-        onTap: (idx) => setState(() => _currentIndex = idx),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.gamepad), label: 'Drive Pad'),
-          BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: 'Pairing'),
-          BottomNavigationBarItem(icon: Icon(Icons.memory), label: 'Pinout Guide'),
-        ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: _keyboardFocusNode,
+      autofocus: true,
+      onKeyEvent: _handleKeyEvent,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0F131A),
+          elevation: 0,
+          title: Row(
+            children: [
+              const Icon(Icons.bolt, color: Color(0xFF00F2FE), size: 22),
+              const SizedBox(width: 8),
+              const Text(
+                'ROVERLINK GCS',
+                style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 16),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _isConnected ? const Color(0xFF0D2818) : const Color(0xFF2D1212),
+                  border: Border.all(
+                    color: _isConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _isConnected ? (_isDirectEsp32 ? 'ESP32 LINK' : 'AI ONLINE') : 'OFFLINE',
+                  style: TextStyle(
+                    color: _isConnected ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _buildDrivePadTab(),
+            _buildPairingTab(),
+            _buildWiringGuideTab(),
+          ],
+        ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          backgroundColor: const Color(0xFF0F131A),
+          selectedItemColor: const Color(0xFF00F2FE),
+          unselectedItemColor: Colors.grey,
+          onTap: (idx) {
+            setState(() => _currentIndex = idx);
+            _keyboardFocusNode.requestFocus();
+          },
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.gamepad), label: 'Drive Pad'),
+            BottomNavigationBarItem(icon: Icon(Icons.qr_code_scanner), label: 'Pairing'),
+            BottomNavigationBarItem(icon: Icon(Icons.memory), label: 'Pinout Guide'),
+          ],
+        ),
       ),
     );
   }
@@ -348,279 +800,396 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
       }
     }
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth >= 720;
+        if (isWideScreen) {
+          return _buildWideDesktopLayout(distColor);
+        } else {
+          return _buildCompactMobileLayout(distColor);
+        }
+      },
+    );
+  }
+
+  Widget _buildCompactMobileLayout(Color distColor) {
     return SingleChildScrollView(
       child: Column(
         children: [
-          // 1. Live AI Camera Stream Viewport (FPV HUD)
-          Container(
-            margin: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-            height: 210,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF1E293B)),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _isConnected && !_isDirectEsp32
-                    ? Image.network(
-                        "$_serverUrl/snapshot.jpg?t=$_frameCounter",
-                        gaplessPlayback: true,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildNoFeedPlaceholder(),
-                      )
-                    : _buildNoFeedPlaceholder(),
-
-                // Top HUD: Model & Inference Info
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  right: 8,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.75),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFF00F2FE)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.remove_red_eye, size: 12, color: Color(0xFF00F2FE)),
-                            const SizedBox(width: 4),
-                            Text(
-                              _isDirectEsp32 ? 'DIRECT HARDWARE MODE' : '$_modelName • ${_inferMs}ms • ${_cameraFps.toStringAsFixed(1)} FPS',
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.75),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFF10B981)),
-                        ),
-                        child: Text(
-                          'DECISION: $_decisionOverlay',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Bottom HUD: Autonomous Reason
-                Positioned(
-                  bottom: 8,
-                  left: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFF334155)),
-                    ),
-                    child: Text(
-                      'WHY: $_decisionReason',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 10, color: Color(0xFFE2E8F0), fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 2. Phone Camera Streamer Quick Action Bar
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF00F2FE)),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                    icon: const Icon(Icons.camera_alt, size: 16, color: Color(0xFF00F2FE)),
-                    label: const Text(
-                      'OPEN PHONE CAM AR HUD',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF00F2FE)),
-                    ),
-                    onPressed: () => _openPhoneCameraHUD(),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  tooltip: 'Toggle Video Feed',
-                  icon: Icon(_liveStreamActive ? Icons.videocam : Icons.videocam_off, color: const Color(0xFF10B981)),
-                  onPressed: () => setState(() => _liveStreamActive = !_liveStreamActive),
-                ),
-              ],
-            ),
-          ),
-
-          // 3. Telemetry HUD bar
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0F131A),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF1E293B)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  children: [
-                    const Text('OBSTACLE', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                    const SizedBox(height: 2),
-                    Text(
-                      _distanceCm != null && _distanceCm! > 0 ? '${_distanceCm!.toStringAsFixed(1)} cm' : '— cm',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: distColor),
-                    ),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: _toggleMode,
-                  child: Column(
-                    children: [
-                      const Text('AUTONOMY', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                      const SizedBox(height: 2),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: _pilotMode == 'AUTO' ? const Color(0xFF08201A) : const Color(0xFF1E293B),
-                          border: Border.all(color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE)),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          _pilotMode,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  children: [
-                    const Text('GATE STATUS', style: TextStyle(fontSize: 10, color: Colors.grey)),
-                    const SizedBox(height: 2),
-                    Text(
-                      (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? 'BLOCKED' : 'CLEAR',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? const Color(0xFFEF4444) : const Color(0xFF10B981),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // 4. Live AI Detection Chips
-          if (_detectedObjects.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: _detectedObjects.map((det) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF121D24),
-                    border: Border.all(color: const Color(0xFF00F2FE)),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.radar, size: 12, color: Color(0xFF00F2FE)),
-                      const SizedBox(width: 4),
-                      Text(det, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ],
-                  ),
-                )).toList(),
-              ),
-            ),
-
-          // 5. Speed Selector
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('SPEED: ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
-                const SizedBox(width: 6),
-                _buildSpeedChip('ECO', 130),
-                const SizedBox(width: 6),
-                _buildSpeedChip('NORMAL', 185),
-                const SizedBox(width: 6),
-                _buildSpeedChip('TURBO', 255),
-              ],
-            ),
-          ),
-
+          _buildKeyboardHintsBanner(),
+          _buildCameraViewport(),
+          _buildActionButtonsBar(),
+          _buildTelemetryBar(distColor),
+          if (_detectedObjects.isNotEmpty) _buildDetectionChips(),
+          _buildSpeedSelector(),
           const SizedBox(height: 8),
-
-          // 6. Directional Drive Pad
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildDriveButton('▲', 'F'),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildDriveButton('◀', 'L'),
-                  const SizedBox(width: 14),
-                  // Emergency Stop
-                  GestureDetector(
-                    onTap: () {
-                      HapticFeedback.heavyImpact();
-                      _sendCommand('S');
-                    },
-                    child: Container(
-                      width: 82,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
-                        borderRadius: BorderRadius.circular(10),
-                        boxShadow: const [
-                          BoxShadow(color: Color(0x66EF4444), blurRadius: 14, offset: Offset(0, 4)),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  _buildDriveButton('▶', 'R'),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _buildDriveButton('▼', 'B'),
-            ],
-          ),
+          _buildDirectionalPad(),
           const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+
+  Widget _buildWideDesktopLayout(Color distColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Left Column: Video Feed & Actions
+        Expanded(
+          flex: 5,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildKeyboardHintsBanner(),
+                _buildCameraViewport(height: 340),
+                const SizedBox(height: 8),
+                _buildActionButtonsBar(),
+                const SizedBox(height: 8),
+                if (_detectedObjects.isNotEmpty) _buildDetectionChips(),
+              ],
+            ),
+          ),
+        ),
+
+        // Right Column: Telemetry & Drive Controls
+        Expanded(
+          flex: 4,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(4, 12, 12, 12),
+            child: Column(
+              children: [
+                _buildTelemetryBar(distColor),
+                const SizedBox(height: 12),
+                _buildSpeedSelector(),
+                const SizedBox(height: 16),
+                _buildDirectionalPad(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKeyboardHintsBanner() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        border: Border.all(color: const Color(0xFF1E293B)),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.keyboard, size: 14, color: Color(0xFF00F2FE)),
+          SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              'KEYS: [W/▲] FWD • [S/▼] BACK • [A/◀] LEFT • [D/▶] RIGHT • [SPACE] STOP • [M] MODE • [1/2/3] SPEED',
+              style: TextStyle(fontSize: 10, color: Color(0xFF94A3B8), fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCameraViewport({double height = 210}) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1E293B)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          _isConnected && !_isDirectEsp32
+              ? Image.network(
+                  "$_serverUrl/snapshot.jpg?t=$_frameCounter",
+                  gaplessPlayback: true,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => _buildNoFeedPlaceholder(),
+                )
+              : _buildNoFeedPlaceholder(),
+
+          // Top HUD
+          Positioned(
+            top: 8,
+            left: 8,
+            right: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.75),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF00F2FE)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.remove_red_eye, size: 12, color: Color(0xFF00F2FE)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _isDirectEsp32 ? 'DIRECT HARDWARE MODE' : '$_modelName • ${_inferMs}ms • ${_cameraFps.toStringAsFixed(1)} FPS',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.75),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF10B981)),
+                  ),
+                  child: Text(
+                    'DECISION: $_decisionOverlay',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Bottom HUD: Autonomous Reason
+          Positioned(
+            bottom: 8,
+            left: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFF334155)),
+              ),
+              child: Text(
+                'WHY: $_decisionReason',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 10, color: Color(0xFFE2E8F0), fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtonsBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF00F2FE)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.phone_android, size: 15, color: Color(0xFF00F2FE)),
+              label: const Text(
+                'PHONE CAM AR HUD',
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF00F2FE)),
+              ),
+              onPressed: () => _openPhoneCameraHUD(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF10B981)),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.videocam, size: 15, color: Color(0xFF10B981)),
+              label: Text(
+                _currentStreamSource.startsWith("cam") ? 'SRC: LAPTOP CAM' : 'SRC: IP WEBCAM',
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981)),
+                overflow: TextOverflow.ellipsis,
+              ),
+              onPressed: () => _openCameraSourceDialog(),
+            ),
+          ),
+          const SizedBox(width: 6),
+          IconButton(
+            tooltip: 'Toggle Video Feed',
+            icon: Icon(_liveStreamActive ? Icons.visibility : Icons.visibility_off, color: const Color(0xFF00F2FE), size: 20),
+            onPressed: () => setState(() => _liveStreamActive = !_liveStreamActive),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTelemetryBar(Color distColor) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F131A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF1E293B)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          Column(
+            children: [
+              const Text('OBSTACLE', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              const SizedBox(height: 2),
+              Text(
+                _distanceCm != null && _distanceCm! > 0 ? '${_distanceCm!.toStringAsFixed(1)} cm' : '— cm',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: distColor),
+              ),
+            ],
+          ),
+          GestureDetector(
+            onTap: _toggleMode,
+            child: Column(
+              children: [
+                const Text('AUTONOMY', style: TextStyle(fontSize: 10, color: Colors.grey)),
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _pilotMode == 'AUTO' ? const Color(0xFF08201A) : const Color(0xFF1E293B),
+                    border: Border.all(color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE)),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _pilotMode,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: _pilotMode == 'AUTO' ? const Color(0xFF10B981) : const Color(0xFF00F2FE),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              const Text('GATE STATUS', style: TextStyle(fontSize: 10, color: Colors.grey)),
+              const SizedBox(height: 2),
+              Text(
+                (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? 'BLOCKED' : 'CLEAR',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: (_distanceCm != null && _distanceCm! < 20.0 && _distanceCm! > 0) ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetectionChips() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: _detectedObjects.map((det) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: const Color(0xFF121D24),
+            border: Border.all(color: const Color(0xFF00F2FE)),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.radar, size: 12, color: Color(0xFF00F2FE)),
+              const SizedBox(width: 4),
+              Text(det, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+            ],
+          ),
+        )).toList(),
+      ),
+    );
+  }
+
+  Widget _buildSpeedSelector() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('SPEED: ', style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 6),
+          _buildSpeedChip('ECO [1]', 130),
+          const SizedBox(width: 6),
+          _buildSpeedChip('NORMAL [2]', 185),
+          const SizedBox(width: 6),
+          _buildSpeedChip('TURBO [3]', 255),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDirectionalPad() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildDriveButton('▲  W', 'F'),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildDriveButton('◀  A', 'L'),
+            const SizedBox(width: 14),
+            // Emergency Stop
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.heavyImpact();
+                _sendCommand('S');
+              },
+              child: Container(
+                width: 86,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: const [
+                    BoxShadow(color: Color(0x66EF4444), blurRadius: 14, offset: Offset(0, 4)),
+                  ],
+                ),
+                alignment: Alignment.center,
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('STOP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                    Text('[SPACE]', style: TextStyle(fontSize: 9, color: Colors.white70)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            _buildDriveButton('▶  D', 'R'),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _buildDriveButton('▼  S', 'B'),
+      ],
     );
   }
 
@@ -656,51 +1225,6 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
     );
   }
 
-  void _openPhoneCameraHUD() {
-    final companionUrl = _isDirectEsp32 ? "http://192.168.4.2:5000/companion" : "$_serverUrl/companion";
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF0F131A),
-        title: const Text('PHONE CAMERA AR STREAMER', style: TextStyle(color: Color(0xFF00F2FE), fontSize: 14)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your smartphone camera can act as the real-time eye of the AI Rover, streaming straight into YOLO model inference with bounding boxes and AR HUD.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 12),
-            const Text('Open in your phone browser:', style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            SelectableText(
-              companionUrl,
-              style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 13),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text('DISMISS'),
-            onPressed: () => Navigator.pop(ctx),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00F2FE), foregroundColor: Colors.black),
-            child: const Text('COPY LINK', style: TextStyle(fontWeight: FontWeight.bold)),
-            onPressed: () {
-              Clipboard.setData(ClipboardData(text: companionUrl));
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied AR HUD URL! Open in Chrome or Safari.')),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSpeedChip(String label, int speed) {
     final isSel = (_targetSpeed == speed);
     return GestureDetector(
@@ -709,7 +1233,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
         setState(() => _targetSpeed = speed);
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: isSel ? const Color(0xFF10B981) : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(12),
@@ -732,7 +1256,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
       onPointerDown: (_) => _sendCommand(cmd),
       onPointerUp: (_) => _sendCommand('S'),
       child: Container(
-        width: 76,
+        width: 82,
         height: 60,
         decoration: BoxDecoration(
           color: const Color(0xFF1E293B),
@@ -740,7 +1264,7 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
           borderRadius: BorderRadius.circular(10),
         ),
         alignment: Alignment.center,
-        child: Text(label, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+        child: Text(label, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
       ),
     );
   }
@@ -824,17 +1348,24 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
           Column(
             children: [
               _buildPresetCard(
-                title: 'Rover Wi-Fi (ESP32 AP)',
-                url: 'http://192.168.4.2:5000',
-                desc: 'Use when laptop & phone are connected to AI_Rover_Control Wi-Fi.',
-                icon: Icons.wifi,
+                title: 'Localhost (Linux Desktop)',
+                url: 'http://127.0.0.1:5000',
+                desc: 'Connect to Mission Control running on this same laptop.',
+                icon: Icons.computer,
               ),
               const SizedBox(height: 8),
               _buildPresetCard(
                 title: 'Home Wi-Fi LAN',
-                url: 'http://192.168.1.11:5000',
+                url: 'http://$_primaryLanIp:5000',
                 desc: 'Use when laptop & phone are connected to your home router.',
                 icon: Icons.router,
+              ),
+              const SizedBox(height: 8),
+              _buildPresetCard(
+                title: 'Rover Wi-Fi (ESP32 AP)',
+                url: 'http://192.168.4.2:5000',
+                desc: 'Use when laptop is connected to AI_Rover_Control Wi-Fi.',
+                icon: Icons.wifi,
               ),
               const SizedBox(height: 8),
               _buildPresetCard(
@@ -853,12 +1384,12 @@ class _RoverMainScreenState extends State<RoverMainScreen> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: const Color(0xFF1E293B)),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('NETWORK TROUBLESHOOTING', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                SizedBox(height: 8),
-                Text('• When on "AI_Rover_Control" Wi-Fi: Laptop IP is 192.168.4.2 (port :5000). ESP32 is 192.168.4.1.\n• When on Home Wi-Fi: Laptop IP is 192.168.1.11 (port :5000).\n• If the app cannot connect, tap "AUTO-DETECT" above to automatically find the running server.', style: TextStyle(fontSize: 11, color: Colors.grey, height: 1.4)),
+                const Text('NETWORK DIAGNOSTICS', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 8),
+                Text('• Laptop LAN IP: $_primaryLanIp (Port :5000)\n• Phone Companion Link: $_companionUrl\n• Current Camera Source: $_currentStreamSource\n• To use phone as camera: Open "IP Webcam" app on Android -> "Start server" -> tap CAMERA SOURCE on this app to connect.', style: const TextStyle(fontSize: 11, color: Colors.grey, height: 1.4)),
               ],
             ),
           ),

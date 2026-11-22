@@ -260,3 +260,140 @@ class ArduinoLink:
         while self._running:
             time.sleep(0.2)
             self.pump()
+
+
+class Esp32Link:
+    """Network command + telemetry link to the rover's ESP32 Wi-Fi bridge.
+
+    Used when the rover is untethered from the laptop's USB port: the ESP32
+    serves HTTP /cmd and /status and relays commands to Arduino Uno over UART2.
+    Duck-types ArduinoLink (connect, close, send, release, pump, telemetry).
+    """
+
+    def __init__(
+        self,
+        base_url: str = "http://192.168.4.1",
+        *,
+        timeout_s: float = 0.5,
+        heartbeat_s: float = HEARTBEAT_INTERVAL_S,
+    ) -> None:
+        self.base_url = (base_url or "http://192.168.4.1").rstrip("/")
+        if not self.base_url.startswith(("http://", "https://")):
+            self.base_url = f"http://{self.base_url}"
+        self.timeout_s = timeout_s
+        self._heartbeat_s = heartbeat_s
+        self.connected = False
+        self._lock = threading.Lock()
+        self._running = False
+        self._thread: threading.Thread | None = None
+        self._active = "S"
+        self._last_write = 0.0
+        self._history: list[dict[str, Any]] = []
+        self._state: dict[str, Any] = {
+            "port": f"esp32:{self.base_url}",
+            "mock": False,
+            "distance_cm": None,
+            "echo_ok": True,
+            "state": "STOP",
+            "command": "S",
+            "status": "STOP",
+            "active": "S",
+            "alert": None,
+            "alert_at": 0.0,
+            "telemetry_at": 0.0,
+            "sent_count": 0,
+        }
+
+    def connect(self) -> bool:
+        self._running = True
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True)
+        self._thread.start()
+        threading.Thread(target=self._heartbeat_loop, daemon=True).start()
+        self.connected = True
+        return True
+
+    def close(self) -> None:
+        self._running = False
+        self.connected = False
+
+    def send(self, command: str) -> bool:
+        cmd = validate_command(command)
+        with self._lock:
+            self._active = cmd
+        ok = self._write(cmd)
+        if ok:
+            with self._lock:
+                self._state["sent_count"] = int(self._state["sent_count"]) + 1
+                self._history.append({"cmd": cmd, "at": time.time()})
+                del self._history[:-16]
+        return ok
+
+    def release(self) -> bool:
+        return self.send("S")
+
+    def pump(self) -> bool:
+        with self._lock:
+            active = str(self._state.get("active", "S"))
+        if active not in MOTION_COMMANDS:
+            return False
+        now = time.monotonic()
+        if now - self._last_write < self._heartbeat_s:
+            return False
+        return self._write(active)
+
+    def _write(self, cmd: str) -> bool:
+        import urllib.request
+
+        try:
+            url = f"{self.base_url}/cmd?c={cmd}"
+            req = urllib.request.Request(url, headers={"User-Agent": "mwe-rover/1.0"})
+            with urllib.request.urlopen(req, timeout=self.timeout_s):
+                pass
+            self._last_write = time.monotonic()
+            with self._lock:
+                self._state["active"] = cmd
+                self._state["command"] = cmd
+            return True
+        except Exception as exc:
+            logger.debug("ESP32 write failed: %s", exc)
+            return False
+
+    def telemetry(self) -> dict[str, Any]:
+        with self._lock:
+            snap = dict(self._state)
+            snap["history"] = list(self._history)
+        snap["connected"] = self.connected
+        seen = float(snap.pop("telemetry_at", 0.0))
+        snap["telemetry_age_s"] = round(time.time() - seen, 2) if seen > 0 else -1.0
+        return snap
+
+    def _poll_loop(self) -> None:
+        import json
+        import urllib.request
+
+        while self._running:
+            try:
+                url = f"{self.base_url}/status"
+                req = urllib.request.Request(url, headers={"User-Agent": "mwe-rover/1.0"})
+                with urllib.request.urlopen(req, timeout=self.timeout_s) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    uno = data.get("uno") or {}
+                    with self._lock:
+                        if "dist_cm" in uno and uno["dist_cm"] is not None:
+                            d = float(uno["dist_cm"])
+                            self._state["distance_cm"] = d if d >= 0 else None
+                            self._state["echo_ok"] = d >= 0
+                        if "state" in uno:
+                            self._state["state"] = uno["state"]
+                            self._state["status"] = uno["state"]
+                        self._state["telemetry_at"] = time.time()
+                        self.connected = True
+            except Exception:
+                pass
+            time.sleep(0.3)
+
+    def _heartbeat_loop(self) -> None:
+        while self._running:
+            time.sleep(0.2)
+            self.pump()
+

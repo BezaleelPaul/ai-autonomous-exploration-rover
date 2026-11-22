@@ -28,11 +28,18 @@ def validate_stream_url(url: str) -> str:
     A bare origin (``http://192.168.1.50:8080``) is what the Android IP Webcam
     app prints on its start screen, so it is completed to the MJPEG path
     ``/video`` instead of being refused; ``/videofeed`` (the app's other alias)
-    and any other explicit path pass through untouched.
+    and any other explicit path pass through untouched. Bare hostnames or IPs
+    without scheme (``192.168.1.50:8080`` or ``192.168.1.50``) are completed
+    with ``http://`` and the default ``:8080/video`` path.
     """
     raw = (url or "").strip()
     if not raw:
         raise ValueError("stream_url is empty (expected http://<PHONE_IP>:8080/video)")
+    if "://" not in raw:
+        if ":" in raw:
+            raw = f"http://{raw}"
+        else:
+            raw = f"http://{raw}:{DEFAULT_PORT}/video"
     parsed = urlparse(raw)
     if parsed.scheme not in ("http", "https", "rtsp"):
         raise ValueError(

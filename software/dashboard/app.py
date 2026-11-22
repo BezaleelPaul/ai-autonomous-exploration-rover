@@ -166,18 +166,11 @@ def create_control_app(
     @app.get("/api/qr")
     def qr_code():
         import io
-        import socket
         import qrcode
         from flask import Response
+        from software.dashboard.network import get_primary_ip
 
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            lan_ip = s.getsockname()[0]
-            s.close()
-        except Exception:
-            lan_ip = "127.0.0.1"
-
+        lan_ip = get_primary_ip()
         port = request.host.split(":")[-1] if ":" in request.host else "5000"
         url = f"http://{lan_ip}:{port}/companion"
 
@@ -186,11 +179,38 @@ def create_control_app(
         img.save(buf, format="PNG")
         return Response(buf.getvalue(), mimetype="image/png")
 
+    @app.get("/api/network")
+    def network():
+        from software.dashboard.network import get_network_summary
+
+        port = int(request.host.split(":")[-1]) if ":" in request.host and request.host.split(":")[-1].isdigit() else 5000
+        src = getattr(feed, "source", "none") if feed is not None else "none"
+        return jsonify(get_network_summary(port=port, current_source=src))
+
+    @app.get("/api/camera/discover")
+    def camera_discover():
+        from software.dashboard.network import discover_ip_cameras
+
+        try:
+            cameras = discover_ip_cameras(timeout_s=0.25)
+            return jsonify({"ok": True, "cameras": cameras, "count": len(cameras)})
+        except Exception as e:
+            return jsonify({"ok": False, "cameras": [], "error": str(e)}), 500
+
     @app.get("/video_feed")
     def video_feed():
         if feed is None:
             return ("no camera", 503)
         return _mjpeg(feed)
+
+    @app.get("/snapshot.jpg")
+    def snapshot():
+        if feed is None:
+            return ("no camera", 503)
+        jpg = feed.jpeg()
+        if jpg is None:
+            return ("no frame yet", 503)
+        return Response(jpg, mimetype="image/jpeg")
 
     @app.get("/api/state")
     @app.get("/api/status")
@@ -219,6 +239,14 @@ def create_control_app(
             out["feed"] = feed.state() if feed is not None else {}
         except Exception as e:
             out["feed"] = {"error": str(e)}
+        try:
+            from software.dashboard.network import get_network_summary
+
+            port = int(request.host.split(":")[-1]) if ":" in request.host and request.host.split(":")[-1].isdigit() else 5000
+            src = getattr(feed, "source", "none") if feed is not None else "none"
+            out["network"] = get_network_summary(port=port, current_source=src)
+        except Exception:
+            out["network"] = {}
         out["client_ip"] = request.remote_addr
         return jsonify(out)
 
@@ -350,6 +378,16 @@ def create_control_app(
             if str(request.args.get("caption", "")).lower() in ("1", "true", "on"):
                 out["caption"] = explainer.caption(frame)
             return jsonify(out)
+
+    @app.get("/api/stream")
+    def stream_get():
+        if feed is None:
+            return jsonify({"ok": False, "source": "none", "healthy": False})
+        return jsonify({
+            "ok": True,
+            "source": getattr(feed, "source", "none"),
+            "healthy": bool(getattr(feed, "_running", False)),
+        })
 
     @app.post("/api/stream")
     def stream_post():

@@ -29,17 +29,29 @@ from software.dashboard.live import LiveFeed
 from software.utils.config_loader import load_config
 
 
-def _open_arduino(cfg: dict, port: str, mock: bool) -> ArduinoLink:
+def _open_arduino(cfg: dict, port: str, mock: bool, esp32_bridge: str | None = None) -> object:
+    if esp32_bridge or (port and (port.startswith("http://") or port.startswith("https://"))):
+        from software.dashboard.controls import Esp32Link
+
+        bridge_url = esp32_bridge or port
+        link = Esp32Link(bridge_url)
+        link.connect()
+        print(f"Rover wireless link via ESP32 @ {bridge_url}")
+        return link
+
     from software.perception_node.serial_link import resolve_serial_port
 
     perception = cfg["perception"]
     board = port or resolve_serial_port("usb", (perception.get("serial_port") or None))
     if board is None and not mock:
+        from software.dashboard.controls import Esp32Link
+
         print(
-            "No Arduino found on USB. Plug the board in, or pass "
-            "--arduino COMx / --mock-serial to run without hardware."
+            "No Arduino found on USB. Falling back to wireless ESP32 gateway at http://192.168.4.1"
         )
-        raise SystemExit(1)
+        link = Esp32Link("http://192.168.4.1")
+        link.connect()
+        return link
     baud = int(perception.get("baud_rate", 115200)) if port else 115200
     link = ArduinoLink(board or "", baud, mock=mock)
     if not link.connect():
@@ -68,6 +80,12 @@ def main() -> None:
     p.add_argument("--backend", default=None)
     p.add_argument("--conf", type=float, default=None)
     p.add_argument("--controls", action="store_true", help="serve the drive pad too")
+    p.add_argument(
+        "--esp32-bridge",
+        default=None,
+        metavar="URL",
+        help="wireless HTTP bridge to ESP32 (e.g. http://192.168.4.1) for untethered rover control",
+    )
     p.add_argument(
         "--mock-serial", action="store_true", help="no hardware; record sends in memory"
     )
@@ -172,7 +190,7 @@ def main() -> None:
         else:
             print(f"Explorer journal off: {journal.reason}")
     if wants_pilot:
-        link = _open_arduino(cfg, args.arduino, args.mock_serial)
+        link = _open_arduino(cfg, args.arduino, args.mock_serial, getattr(args, "esp32_bridge", None))
         from software.dashboard.pilot import MissionPilot
 
         if args.record:
